@@ -1,0 +1,575 @@
+.admin-edit-product-page {
+  width: min(1050px, 92%);
+  margin: 0 auto;
+  padding: 2.5rem 0 5rem;
+  color: #2E2A22;
+}
+
+.admin-edit-product-header {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 2rem;
+}
+
+.admin-edit-back {
+  display: inline-block;
+  margin-bottom: 1.2rem;
+  color: #3E5B3E;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.admin-edit-back:hover {
+  text-decoration: underline;
+}
+
+.admin-edit-eyebrow {
+  margin: 0 0 0.25rem;
+  color: #B5502C;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-edit-product-header h1 {
+  margin: 0;
+  font-family: 'Zilla Slab', serif;
+  font-size: clamp(2rem, 5vw, 2.8rem);
+  color: #3E5B3E;
+}
+
+.admin-edit-product-name {
+  margin: 0.35rem 0 0;
+  color: #7C7A6E;
+}
+
+.admin-edit-visibility {
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.admin-edit-visibility.published {
+  background: rgba(62, 91, 62, 0.12);
+  color: #3E5B3E;
+}
+
+.admin-edit-visibility.unpublished {
+  background: rgba(124, 122, 110, 0.12);
+  color: #68665d;
+}
+
+.admin-edit-message,
+.admin-edit-error {
+  margin-bottom: 1.2rem;
+  padding: 0.9rem 1rem;
+  border-radius: 5px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.admin-edit-message {
+  border: 1px solid rgba(62, 91, 62, 0.25);
+  background: rgba(62, 91, 62, 0.08);
+  color: #3E5B3E;
+}
+
+.admin-edit-error {
+  border: 1px solid rgba(181, 80, 44, 0.3);
+  background: rgba(181, 80, 44, 0.08);
+  color: #8a3d22;
+}
+
+.admin-edit-photo-section,
+.admin-edit-form-section {
+  margin-bottom: 1.3rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(62, 91, 62, 0.18);
+  border-radius: 7px;
+  background: #F6F1E4;
+}
+
+.admin-edit-section-heading {
+  margin-bottom: 1.3rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-edit-section-heading h2 {
+  margin: 0 0 0.25rem;
+  font-family: 'Zilla Slab', serif;
+  font-size: 1.25rem;
+  color: #3E5B3E;
+}
+
+.admin-edit-section-heading p {
+  max-width: 630px;
+  margin: 0;
+  color: #7C7A6E;
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.admin-photo-label,
+.admin-gallery-count {
+  flex-shrink: 0;
+  padding: 0.4rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(62, 91, 62, 0.1);
+  color: #3E5B3E;
+  font-size: 0.65rem;
+  font-weight: 900;
+}
+
+.admin-cover-manager {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.admin-cover-preview {
+  width: 220px;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid rgba(62, 91, 62, 0.2);
+  border-radius: 6px;
+  background: #E9E2D0;
+}
+
+.admin-cover-preview img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.admin-cover-preview span {
+  color: #969184;
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.admin-photo-actions {
+  min-width: 0;
+}
+
+.admin-file-picker {
+  display: block;
+  color: #2E2A22;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.admin-file-picker input {
+  width: 100%;
+  margin-top: 0.45rem;
+  padding: 0.7rem;
+  border: 1px solid rgba(62, 91, 62, 0.24);
+  border-radius: 5px;
+  background: #fffdf8;
+}
+
+.admin-selected-file {
+  margin: 0.65rem 0 0;
+  color: #7C7A6E;
+  font-size: 0.76rem;
+  word-break: break-word;
+}
+
+.admin-photo-button-row {
+  margin-top: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.admin-upload-photo-button,
+.admin-remove-photo-button {
+  min-height: 42px;
+  padding: 0.65rem 0.95rem;
+  border-radius: 4px;
+  font-size: 0.76rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-upload-photo-button {
+  border: 1px solid #3E5B3E;
+  background: #3E5B3E;
+  color: #F6F1E4;
+}
+
+.admin-upload-photo-button:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.admin-remove-photo-button {
+  border: 1px solid rgba(181, 80, 44, 0.4);
+  background: transparent;
+  color: #B5502C;
+}
+
+.admin-upload-photo-button:disabled,
+.admin-remove-photo-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.admin-photo-help {
+  margin: 0.7rem 0 0;
+  color: #7C7A6E;
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.admin-gallery-grid {
+  margin-bottom: 1.3rem;
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(145px, 1fr)
+  );
+  gap: 0.85rem;
+}
+
+.admin-gallery-card {
+  overflow: hidden;
+  border: 1px solid rgba(62, 91, 62, 0.18);
+  border-radius: 6px;
+  background: #fffdf8;
+}
+
+.admin-gallery-image {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: #E9E2D0;
+}
+
+.admin-gallery-image img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.admin-gallery-number {
+  position: absolute;
+  top: 0.45rem;
+  left: 0.45rem;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(46, 42, 34, 0.82);
+  color: white;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.admin-gallery-remove {
+  width: 100%;
+  min-height: 38px;
+  border: 0;
+  border-top: 1px solid rgba(62, 91, 62, 0.12);
+  background: transparent;
+  color: #B5502C;
+  font-size: 0.72rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-gallery-remove:hover:not(:disabled) {
+  background: rgba(181, 80, 44, 0.05);
+}
+
+.admin-gallery-remove:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.admin-gallery-empty {
+  min-height: 130px;
+  margin-bottom: 1.2rem;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.25rem;
+  border: 1px dashed rgba(62, 91, 62, 0.25);
+  border-radius: 6px;
+  color: #7C7A6E;
+  text-align: center;
+}
+
+.admin-gallery-empty strong {
+  color: #3E5B3E;
+  font-family: 'Zilla Slab', serif;
+}
+
+.admin-gallery-empty span {
+  font-size: 0.76rem;
+}
+
+.admin-gallery-upload {
+  padding-top: 1.2rem;
+  border-top: 1px solid rgba(62, 91, 62, 0.12);
+}
+
+.admin-gallery-selected {
+  margin: 0.8rem 0;
+  padding: 0.8rem;
+  border-radius: 5px;
+  background: #E9E2D0;
+}
+
+.admin-gallery-selected strong {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: #3E5B3E;
+  font-size: 0.75rem;
+}
+
+.admin-gallery-selected div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.admin-gallery-selected span {
+  color: #7C7A6E;
+  font-size: 0.7rem;
+  word-break: break-word;
+}
+
+.admin-edit-form {
+  margin: 0;
+}
+
+.admin-edit-form-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.admin-edit-field {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  color: #2E2A22;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.admin-edit-field-wide {
+  grid-column: 1 / -1;
+}
+
+.admin-edit-field input,
+.admin-edit-field select,
+.admin-edit-field textarea {
+  width: 100%;
+  min-height: 43px;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid rgba(62, 91, 62, 0.26);
+  border-radius: 5px;
+  background: #fffdf8;
+  color: #2E2A22;
+  outline: none;
+}
+
+.admin-edit-field textarea {
+  min-height: 130px;
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.admin-edit-field input:focus,
+.admin-edit-field select:focus,
+.admin-edit-field textarea:focus {
+  border-color: #3E5B3E;
+}
+
+.admin-edit-price-input {
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(62, 91, 62, 0.26);
+  border-radius: 5px;
+  background: #fffdf8;
+}
+
+.admin-edit-price-input:focus-within {
+  border-color: #3E5B3E;
+}
+
+.admin-edit-price-input span {
+  padding-left: 0.8rem;
+  color: #7C7A6E;
+}
+
+.admin-edit-price-input input {
+  border: 0;
+  background: transparent;
+}
+
+.admin-edit-published-toggle {
+  margin-top: 1.2rem;
+  padding: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid rgba(62, 91, 62, 0.16);
+  border-radius: 5px;
+  background: #fffdf8;
+  cursor: pointer;
+}
+
+.admin-edit-published-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: #3E5B3E;
+}
+
+.admin-edit-published-toggle span {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-edit-published-toggle strong {
+  color: #3E5B3E;
+  font-size: 0.8rem;
+}
+
+.admin-edit-published-toggle small {
+  margin-top: 0.15rem;
+  color: #7C7A6E;
+  font-size: 0.68rem;
+}
+
+.admin-edit-footer-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-edit-save,
+.admin-edit-delete {
+  min-height: 45px;
+  padding: 0.75rem 1.1rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-edit-save {
+  border: 1px solid #3E5B3E;
+  background: #3E5B3E;
+  color: #F6F1E4;
+}
+
+.admin-edit-delete {
+  border: 1px solid rgba(181, 80, 44, 0.4);
+  background: transparent;
+  color: #B5502C;
+}
+
+.admin-edit-save:disabled,
+.admin-edit-delete:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.admin-edit-state {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+}
+
+.admin-edit-state h1 {
+  font-family: 'Zilla Slab', serif;
+  color: #3E5B3E;
+}
+
+.admin-edit-state a {
+  color: #3E5B3E;
+  font-weight: 800;
+}
+
+@media (max-width: 720px) {
+  .admin-edit-product-page {
+    width: 90%;
+    padding-top: 1.5rem;
+  }
+
+  .admin-edit-product-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .admin-cover-manager {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-cover-preview {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .admin-edit-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-edit-field-wide {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .admin-edit-photo-section,
+  .admin-edit-form-section {
+    padding: 1.1rem;
+  }
+
+  .admin-edit-section-heading {
+    flex-direction: column;
+  }
+
+  .admin-gallery-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-photo-button-row,
+  .admin-edit-footer-actions {
+    flex-direction: column;
+  }
+
+  .admin-upload-photo-button,
+  .admin-remove-photo-button,
+  .admin-edit-save,
+  .admin-edit-delete {
+    width: 100%;
+  }
+}
