@@ -10,7 +10,7 @@ function AdminAddProductPage() {
     name: '',
     brand: '',
     category: 'Bags & Wallets',
-    condition: 'Unused',
+    condition: 'New, unused',
     stock: 1,
     price: '',
     status: 'available',
@@ -173,7 +173,7 @@ function AdminAddProductPage() {
       name: '',
       brand: '',
       category: 'Bags & Wallets',
-      condition: 'Unused',
+      condition: 'New, unused',
       stock: 1,
       price: '',
       status: 'available',
@@ -303,7 +303,7 @@ function AdminAddProductPage() {
 
           condition:
             formData.condition.trim() ||
-            'Unused',
+            'New, unused',
 
           stock,
 
@@ -437,7 +437,7 @@ function AdminAddProductPage() {
           </Link>
 
           <p className="admin-eyebrow">
-            Corner Store Admin
+            Lovelyn It! Admin
           </p>
 
           <h1>

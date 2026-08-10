@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Link, Routes, Route } from 'react-router-dom'
 import './App.css'
 import './components/StoreInfoSections.css'
 
@@ -62,11 +62,56 @@ function App() {
     return matchesSearch && matchesCategory
   })
 
+  const featuredProducts = []
+  const featuredProductIds = new Set()
+
+  const productsWithPhotos = products.filter(
+    (product) =>
+      product.image_path &&
+      product.status !== 'sold'
+  )
+
+  categories.slice(1).forEach((category) => {
+    const featuredProduct = productsWithPhotos.find(
+      (product) =>
+        product.category === category &&
+        !featuredProductIds.has(product.id)
+    )
+
+    if (featuredProduct) {
+      featuredProducts.push(featuredProduct)
+      featuredProductIds.add(featuredProduct.id)
+    }
+  })
+
+  productsWithPhotos.forEach((product) => {
+    if (
+      featuredProducts.length < 4 &&
+      !featuredProductIds.has(product.id)
+    ) {
+      featuredProducts.push(product)
+      featuredProductIds.add(product.id)
+    }
+  })
+
+  function getProductImageUrl(imagePath) {
+    const { data } = supabase
+      .storage
+      .from('product-images')
+      .getPublicUrl(imagePath)
+
+    return data.publicUrl
+  }
+
   const homePage = (
     <>
+      <a className="skip-link" href="#shop">
+        Skip to products
+      </a>
+
       <header className="site-header">
         <div className="brand">
-          Corner Store
+          Lovelyn It!
         </div>
 
         <nav className="nav">
@@ -79,7 +124,7 @@ function App() {
           </a>
 
           <a href="#contact">
-            Message us
+            Message
           </a>
         </nav>
       </header>
@@ -88,7 +133,7 @@ function App() {
         <section className="hero">
           <div className="hero-copy">
             <p className="eyebrow">
-              A real shop, continued
+              A collection lovingly kept
             </p>
 
             <h1>
@@ -97,7 +142,8 @@ function App() {
 
             <p className="hero-text">
               Bags, wallets, kitchenware, appliances,
-              and more — unused items now finding new homes.
+              and more — new, unused items from Lovelyn’s
+              collection, ready for new homes.
             </p>
 
             <a
@@ -108,14 +154,53 @@ function App() {
             </a>
           </div>
 
-          <div className="hero-photo">
-            PHOTO
+          <div
+            className="hero-showcase"
+            aria-label="A selection of real products from the shop"
+          >
+            {loading ? (
+              Array.from({ length: 4 }).map((_, index) => (
+                <div
+                  className="hero-product hero-product-skeleton"
+                  key={index}
+                  aria-hidden="true"
+                />
+              ))
+            ) : featuredProducts.length > 0 ? (
+              featuredProducts.map((product, index) => (
+                <Link
+                  to={`/products/${product.slug}`}
+                  className="hero-product"
+                  key={product.id}
+                  aria-label={`View ${product.name}`}
+                >
+                  <img
+                    src={getProductImageUrl(product.image_path)}
+                    alt={product.name}
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                  />
+
+                  <span>
+                    {product.category}
+                  </span>
+                </Link>
+              ))
+            ) : (
+              <div className="hero-empty">
+                Real product photos coming soon.
+              </div>
+            )}
+
+            <p className="hero-authenticity-note">
+              Real photos · Actual items
+            </p>
           </div>
         </section>
 
         <section
           className="shelf"
           id="shop"
+          tabIndex="-1"
         >
           <div className="shelf-header">
             <h2>
@@ -130,16 +215,27 @@ function App() {
           </div>
 
           <div className="shop-controls">
-            <input
-              type="search"
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(event) =>
-                setSearchQuery(event.target.value)
-              }
-            />
+            <div className="shop-search">
+              <label htmlFor="product-search">
+                Search products
+              </label>
 
-            <div className="category-filters">
+              <input
+                id="product-search"
+                type="search"
+                placeholder="Try “bag” or “kitchen”"
+                value={searchQuery}
+                onChange={(event) =>
+                  setSearchQuery(event.target.value)
+                }
+              />
+            </div>
+
+            <div
+              className="category-filters"
+              role="group"
+              aria-label="Filter products by category"
+            >
               {categories.map((category) => (
                 <button
                   type="button"
@@ -149,6 +245,7 @@ function App() {
                       ? 'active'
                       : ''
                   }`}
+                  aria-pressed={selectedCategory === category}
                   onClick={() =>
                     setSelectedCategory(category)
                   }

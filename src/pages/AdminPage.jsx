@@ -38,6 +38,12 @@ function AdminPage() {
       (_event, newSession) => {
         setSession(newSession)
         setCheckingSession(false)
+
+        if (!newSession) {
+          setProducts([])
+          setStockDrafts({})
+          setPriceDrafts({})
+        }
       }
     )
 
@@ -48,7 +54,6 @@ function AdminPage() {
 
   useEffect(() => {
     if (!session) {
-      setProducts([])
       return
     }
 
@@ -591,7 +596,7 @@ function AdminPage() {
       <main className="admin-login-page">
         <div className="admin-login-card">
           <p className="admin-eyebrow">
-            Corner Store
+            Lovelyn It!
           </p>
 
           <h1>
@@ -666,7 +671,7 @@ function AdminPage() {
       <header className="admin-header">
         <div>
           <p className="admin-eyebrow">
-            Corner Store
+            Lovelyn It!
           </p>
 
           <h1>

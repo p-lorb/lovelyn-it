@@ -6,16 +6,6 @@ function ProductCard({ product }) {
   const isReserved = product.status === 'reserved'
   const isSold = product.status === 'sold'
 
-  const messengerUsername =
-    import.meta.env.VITE_MESSENGER_USERNAME
-
-  const messengerUrl = messengerUsername
-    ? `https://m.me/${messengerUsername}`
-    : null
-
-  const canMessage =
-    isAvailable && Boolean(messengerUrl)
-
   let imageUrl = null
 
   if (product.image_path) {
@@ -25,18 +15,6 @@ function ProductCard({ product }) {
       .getPublicUrl(product.image_path)
 
     imageUrl = data.publicUrl
-  }
-
-  function handleMessageSeller() {
-    if (!canMessage) {
-      return
-    }
-
-    window.open(
-      messengerUrl,
-      '_blank',
-      'noopener,noreferrer'
-    )
   }
 
   return (
@@ -69,6 +47,13 @@ function ProductCard({ product }) {
               {isReserved ? 'Reserved' : 'Sold'}
             </span>
           )}
+
+          <span
+            className="product-card-view"
+            aria-hidden="true"
+          >
+            View item →
+          </span>
         </div>
       </Link>
 
@@ -92,15 +77,20 @@ function ProductCard({ product }) {
           {product.category}
           {' · '}
           {product.condition}
+        </p>
 
-          {isAvailable &&
-            ` · ${product.stock} available`}
-
-          {isReserved &&
-            ' · Currently reserved'}
-
-          {isSold &&
-            ' · Sold'}
+        <p
+          className={`product-availability ${
+            isAvailable
+              ? 'available'
+              : isReserved
+                ? 'reserved'
+                : 'sold'
+          }`}
+        >
+          {isAvailable && `${product.stock} available`}
+          {isReserved && 'Currently reserved'}
+          {isSold && 'Sold'}
         </p>
 
         <div>
@@ -110,15 +100,12 @@ function ProductCard({ product }) {
               : 'Price coming soon'}
           </strong>
 
-          <button
-            type="button"
-            disabled={!canMessage}
-            onClick={handleMessageSeller}
+          <Link
+            to={`/products/${product.slug}`}
+            className="product-card-action"
           >
-            {isAvailable && 'Message'}
-            {isReserved && 'Reserved'}
-            {isSold && 'Sold'}
-          </button>
+            View details
+          </Link>
         </div>
       </div>
     </div>

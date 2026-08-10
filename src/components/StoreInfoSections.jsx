@@ -14,7 +14,7 @@ function StoreInfoSections() {
       >
         <div className="store-section-heading">
           <p className="eyebrow">
-            Simple and straightforward
+            Buying from Lovelyn It!
           </p>
 
           <h2>
@@ -22,9 +22,10 @@ function StoreInfoSections() {
           </h2>
 
           <p>
-            See something you like? There is no complicated
-            checkout process. Just browse, message us, and
-            we’ll confirm the details with you.
+            This website is the live catalog. Browse the actual
+            items and send a message through Facebook to confirm
+            quantities, payment, and delivery privately. The shop
+            is based in Cavite.
           </p>
         </div>
 
@@ -51,12 +52,13 @@ function StoreInfoSections() {
             </span>
 
             <h3>
-              Message us
+              Send a message
             </h3>
 
             <p>
-              Tap Message Seller on an available item
-              and you’ll be taken directly to Messenger.
+              Open a product to see the full description, photos,
+              price, and available quantity. When you’re ready,
+              tap Message about this item to open Messenger.
             </p>
           </article>
 
@@ -66,19 +68,43 @@ function StoreInfoSections() {
             </span>
 
             <h3>
-              Confirm the details
+              Choose delivery
             </h3>
 
             <p>
-              We’ll confirm that the item is still available
-              and arrange the rest with you through Messenger.
+              Cash meetup or personal delivery may be available
+              near Cavite. For farther locations, Lalamove can be
+              arranged with the delivery fee paid by the buyer.
+            </p>
+          </article>
+
+          <article className="how-step">
+            <span className="how-step-number">
+              04
+            </span>
+
+            <h3>
+              Confirm and receive
+            </h3>
+
+            <p>
+              Requested quantities are reserved after confirmation
+              in Messenger and held for 24 hours. Cash is accepted
+              at meetup; Lalamove orders require payment before
+              dispatch.
             </p>
           </article>
         </div>
 
         <p className="store-process-note">
-          This website is for browsing and inquiries.
-          No payment or checkout happens directly on the site.
+          Listed prices do not include delivery. Lalamove fees
+          are based on the live app quote at booking. No payment
+          or checkout happens directly on this website. Payment
+          account details and exact addresses are only shared
+          privately after confirmation. GCash, Maya, GoTyme, and
+          PayPal may be arranged through Messenger. If a hold is
+          not confirmed within 24 hours, the quantity may be offered
+          to the next interested buyer.
         </p>
       </section>
 
@@ -97,8 +123,9 @@ function StoreInfoSections() {
             </h2>
 
             <p>
-              Ask about an item, availability, or anything
-              you’d like to know before deciding.
+              Send the product name, quantity, and your general
+              location in or outside Cavite. Availability, payment,
+              and delivery options will be confirmed in Messenger.
             </p>
           </div>
 
@@ -122,11 +149,11 @@ function StoreInfoSections() {
       <footer className="site-footer">
         <div>
           <strong>
-            Corner Store
+            Lovelyn It!
           </strong>
 
           <span>
-            Good finds, finding new homes.
+            Find something you’ll love.
           </span>
         </div>
 

@@ -24,7 +24,7 @@ function AdminEditProductPage() {
     name: '',
     brand: '',
     category: 'Bags & Wallets',
-    condition: 'Unused',
+    condition: 'New, unused',
     stock: 0,
     price: '',
     status: 'available',
@@ -42,6 +42,7 @@ function AdminEditProductPage() {
   const [selectedImage, setSelectedImage] = useState(null)
   const [imageSaving, setImageSaving] = useState(false)
   const [imageInputKey, setImageInputKey] = useState(0)
+  const [isCoverDragging, setIsCoverDragging] = useState(false)
 
   // Gallery
   const [galleryImages, setGalleryImages] = useState([])
@@ -49,6 +50,7 @@ function AdminEditProductPage() {
   const [gallerySaving, setGallerySaving] = useState(false)
   const [galleryInputKey, setGalleryInputKey] = useState(0)
   const [removingGalleryId, setRemovingGalleryId] = useState(null)
+  const [isGalleryDragging, setIsGalleryDragging] = useState(false)
 
   useEffect(() => {
     async function loadPage() {
@@ -102,7 +104,7 @@ function AdminEditProductPage() {
         category:
           loadedProduct.category ?? 'Bags & Wallets',
         condition:
-          loadedProduct.condition ?? 'Unused',
+          loadedProduct.condition ?? 'New, unused',
         stock: loadedProduct.stock ?? 0,
         price: loadedProduct.price ?? '',
         status:
@@ -398,7 +400,7 @@ function AdminEditProductPage() {
         category: formData.category,
         condition:
           formData.condition.trim() ||
-          'Unused',
+          'New, unused',
         stock,
         price,
         status: formData.status,
@@ -635,12 +637,118 @@ function AdminEditProductPage() {
     setImageSaving(false)
   }
 
-  function handleGallerySelection(event) {
-    setSelectedGalleryFiles(
-      Array.from(
-        event.target.files ?? []
+  function selectCoverImage(file) {
+    setMessage('')
+    setErrorMessage('')
+
+    if (!file) {
+      setSelectedImage(null)
+      return
+    }
+
+    const validationError = validateImage(file)
+
+    if (validationError) {
+      setSelectedImage(null)
+      setErrorMessage(
+        `${file.name}: ${validationError}`
       )
+      return
+    }
+
+    setSelectedImage(file)
+  }
+
+  function handleCoverSelection(event) {
+    selectCoverImage(
+      event.target.files?.[0] ?? null
     )
+  }
+
+  function handleCoverDragOver(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (!imageSaving) {
+      setIsCoverDragging(true)
+    }
+  }
+
+  function handleCoverDragLeave(event) {
+    event.preventDefault()
+    event.stopPropagation()
+    setIsCoverDragging(false)
+  }
+
+  function handleCoverDrop(event) {
+    event.preventDefault()
+    event.stopPropagation()
+    setIsCoverDragging(false)
+
+    if (imageSaving) {
+      return
+    }
+
+    selectCoverImage(
+      event.dataTransfer.files?.[0] ?? null
+    )
+  }
+
+  function selectGalleryFiles(files) {
+    setMessage('')
+    setErrorMessage('')
+
+    const nextFiles = Array.from(files ?? [])
+
+    if (nextFiles.length === 0) {
+      setSelectedGalleryFiles([])
+      return
+    }
+
+    for (const file of nextFiles) {
+      const validationError = validateImage(file)
+
+      if (validationError) {
+        setSelectedGalleryFiles([])
+        setErrorMessage(
+          `${file.name}: ${validationError}`
+        )
+        return
+      }
+    }
+
+    setSelectedGalleryFiles(nextFiles)
+  }
+
+  function handleGallerySelection(event) {
+    selectGalleryFiles(event.target.files)
+  }
+
+  function handleGalleryDragOver(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (!gallerySaving) {
+      setIsGalleryDragging(true)
+    }
+  }
+
+  function handleGalleryDragLeave(event) {
+    event.preventDefault()
+    event.stopPropagation()
+    setIsGalleryDragging(false)
+  }
+
+  function handleGalleryDrop(event) {
+    event.preventDefault()
+    event.stopPropagation()
+    setIsGalleryDragging(false)
+
+    if (gallerySaving) {
+      return
+    }
+
+    selectGalleryFiles(event.dataTransfer.files)
   }
 
   async function handleGalleryUpload() {
@@ -1029,7 +1137,7 @@ function AdminEditProductPage() {
           </Link>
 
           <p className="admin-edit-eyebrow">
-            Corner Store Admin
+            Lovelyn It! Admin
           </p>
 
           <h1>
@@ -1099,19 +1207,45 @@ function AdminEditProductPage() {
           </div>
 
           <div className="admin-photo-actions">
-            <label className="admin-file-picker">
-              Choose cover photo
+            <label
+              className={`admin-drop-zone${
+                isCoverDragging
+                  ? ' is-dragging'
+                  : ''
+              }${
+                imageSaving
+                  ? ' is-disabled'
+                  : ''
+              }`}
+              onDragEnter={handleCoverDragOver}
+              onDragOver={handleCoverDragOver}
+              onDragLeave={handleCoverDragLeave}
+              onDrop={handleCoverDrop}
+            >
+              <span
+                className="admin-drop-zone-icon"
+                aria-hidden="true"
+              >
+                ↓
+              </span>
+
+              <strong>
+                {product.image_path
+                  ? 'Drop a new cover photo here'
+                  : 'Drop cover photo here'}
+              </strong>
+
+              <span>
+                or click to browse
+              </span>
 
               <input
                 key={imageInputKey}
+                className="admin-drop-zone-input"
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
-                onChange={(event) =>
-                  setSelectedImage(
-                    event.target.files?.[0] ??
-                      null
-                  )
-                }
+                onChange={handleCoverSelection}
+                disabled={imageSaving}
               />
             </label>
 
@@ -1247,17 +1381,44 @@ function AdminEditProductPage() {
         )}
 
         <div className="admin-gallery-upload">
-          <label className="admin-file-picker">
-            Choose gallery photos
+          <label
+            className={`admin-drop-zone${
+              isGalleryDragging
+                ? ' is-dragging'
+                : ''
+            }${
+              gallerySaving
+                ? ' is-disabled'
+                : ''
+            }`}
+            onDragEnter={handleGalleryDragOver}
+            onDragOver={handleGalleryDragOver}
+            onDragLeave={handleGalleryDragLeave}
+            onDrop={handleGalleryDrop}
+          >
+            <span
+              className="admin-drop-zone-icon"
+              aria-hidden="true"
+            >
+              ↓
+            </span>
+
+            <strong>
+              Drop gallery photos here
+            </strong>
+
+            <span>
+              or click to browse — multiple files supported
+            </span>
 
             <input
               key={galleryInputKey}
+              className="admin-drop-zone-input"
               type="file"
               multiple
               accept="image/jpeg,image/png,image/webp"
-              onChange={
-                handleGallerySelection
-              }
+              onChange={handleGallerySelection}
+              disabled={gallerySaving}
             />
           </label>
 

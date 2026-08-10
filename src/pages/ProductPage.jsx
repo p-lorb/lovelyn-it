@@ -1,7 +1,77 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { getProductDescription } from '../lib/productDescriptions'
 import './ProductPage.css'
+
+function getPublicImageUrl(imagePath) {
+  if (!imagePath) {
+    return null
+  }
+
+  const { data } = supabase
+    .storage
+    .from('product-images')
+    .getPublicUrl(imagePath)
+
+  return data.publicUrl
+}
+
+async function getImageBytes(imagePath) {
+  const response = await fetch(getPublicImageUrl(imagePath))
+
+  if (!response.ok) {
+    throw new Error(`Could not compare image: ${response.status}`)
+  }
+
+  return new Uint8Array(await response.arrayBuffer())
+}
+
+function imageBytesMatch(firstImage, secondImage) {
+  if (firstImage.length !== secondImage.length) {
+    return false
+  }
+
+  return firstImage.every(
+    (value, index) => value === secondImage[index]
+  )
+}
+
+async function removeExactGalleryDuplicates(
+  coverImagePath,
+  galleryItems
+) {
+  if (!coverImagePath || galleryItems.length === 0) {
+    return galleryItems
+  }
+
+  const coverBytes = await getImageBytes(coverImagePath)
+  const uniqueGalleryItems = []
+  const uniqueGalleryBytes = []
+
+  for (const galleryItem of galleryItems) {
+    const galleryBytes = await getImageBytes(
+      galleryItem.image_path
+    )
+
+    const matchesCover = imageBytesMatch(
+      coverBytes,
+      galleryBytes
+    )
+
+    const matchesAnotherGalleryImage =
+      uniqueGalleryBytes.some((existingBytes) =>
+        imageBytesMatch(existingBytes, galleryBytes)
+      )
+
+    if (!matchesCover && !matchesAnotherGalleryImage) {
+      uniqueGalleryItems.push(galleryItem)
+      uniqueGalleryBytes.push(galleryBytes)
+    }
+  }
+
+  return uniqueGalleryItems
+}
 
 function ProductPage() {
   const { slug } = useParams()
@@ -9,6 +79,7 @@ function ProductPage() {
   const [product, setProduct] = useState(null)
   const [galleryImages, setGalleryImages] = useState([])
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [copyStatus, setCopyStatus] = useState('idle')
 
   const [loading, setLoading] = useState(true)
 
@@ -24,6 +95,7 @@ function ProductPage() {
       setLoading(true)
       setGalleryImages([])
       setSelectedImageIndex(0)
+      setCopyStatus('idle')
 
       const {
         data: productData,
@@ -53,6 +125,7 @@ function ProductPage() {
       }
 
       setProduct(productData)
+      setLoading(false)
 
       const {
         data: galleryData,
@@ -74,29 +147,27 @@ function ProductPage() {
           galleryError
         )
       } else {
-        setGalleryImages(
-          galleryData ?? []
-        )
-      }
+        try {
+          const uniqueGalleryImages =
+            await removeExactGalleryDuplicates(
+              productData.image_path,
+              galleryData ?? []
+            )
 
-      setLoading(false)
+          setGalleryImages(uniqueGalleryImages)
+        } catch (duplicateCheckError) {
+          console.error(
+            'Gallery duplicate check error:',
+            duplicateCheckError
+          )
+
+          setGalleryImages(galleryData ?? [])
+        }
+      }
     }
 
     loadProduct()
   }, [slug])
-
-  function getPublicImageUrl(imagePath) {
-    if (!imagePath) {
-      return null
-    }
-
-    const { data } = supabase
-      .storage
-      .from('product-images')
-      .getPublicUrl(imagePath)
-
-    return data.publicUrl
-  }
 
   if (loading) {
     return (
@@ -136,6 +207,17 @@ function ProductPage() {
 
   const canMessage =
     isAvailable && Boolean(messengerUrl)
+
+  const priceLabel =
+    product.price !== null
+      ? `₱${Number(product.price).toLocaleString('en-PH')}`
+      : 'the listed price'
+
+  const inquiryText =
+    `Hi! I'm interested in ${product.name} (${priceLabel}) ` +
+    `from Lovelyn It!. Is it still available?\n\n` +
+    'Quantity: 1\n' +
+    'General location: __________'
 
   const productImages = []
 
@@ -219,14 +301,32 @@ function ProductPage() {
     )
   }
 
+  async function handleCopyInquiry() {
+    if (!canMessage) {
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(inquiryText)
+      setCopyStatus('copied')
+    } catch (error) {
+      console.error('Copy inquiry error:', error)
+      setCopyStatus('failed')
+    }
+  }
+
   return (
     <>
+      <a className="skip-link" href="#main-content">
+        Skip to product details
+      </a>
+
       <header className="site-header">
         <Link
           to="/"
           className="brand brand-link"
         >
-          Corner Store
+          Lovelyn It!
         </Link>
 
         <nav className="nav">
@@ -239,12 +339,12 @@ function ProductPage() {
           </Link>
 
           <Link to="/#contact">
-            Message us
+            Message
           </Link>
         </nav>
       </header>
 
-      <main className="product-page">
+      <main className="product-page" id="main-content" tabIndex="-1">
         <Link
           to="/#shop"
           className="back-link"
@@ -366,6 +466,12 @@ function ProductPage() {
                 )}
               </div>
             )}
+
+            <p className="product-photo-note">
+              Photos show the actual item you’ll receive. Some
+              items were photographed in their protective plastic
+              packaging.
+            </p>
           </div>
 
           <div className="product-detail-info">
@@ -413,31 +519,114 @@ function ProductPage() {
                 : 'Price coming soon'}
             </div>
 
-            <button
-              type="button"
-              className="product-message-button"
-              disabled={!canMessage}
-              onClick={handleMessageSeller}
-            >
-              {isAvailable &&
-                'Message Seller'}
-
-              {isReserved &&
-                'Currently Reserved'}
-
-              {isSold &&
-                'Sold'}
-            </button>
-
             <section className="product-description">
               <h2>
                 Product details
               </h2>
 
               <p>
-                {product.description ||
-                  'More information about this product will be added soon.'}
+                {getProductDescription(product)}
               </p>
+            </section>
+
+            <section
+              className="product-inquiry"
+              aria-labelledby="product-inquiry-title"
+            >
+              <div className="product-inquiry-heading">
+                <h2 id="product-inquiry-title">
+                  {isAvailable && 'Ready when you are'}
+                  {isReserved && 'This item is currently reserved'}
+                  {isSold && 'This item has been sold'}
+                </h2>
+
+                {isAvailable && (
+                  <p>
+                    Send a message in your own words through Messenger.
+                    Quantity, payment, and delivery details will be
+                    confirmed privately.
+                  </p>
+                )}
+
+                {isReserved && (
+                  <p>
+                    Someone is currently arranging this purchase.
+                    It may become available again if the 24-hour
+                    hold is released.
+                  </p>
+                )}
+
+                {isSold && (
+                  <p>
+                    This product is no longer available to order.
+                  </p>
+                )}
+              </div>
+
+              {isAvailable && (
+                <>
+                  <button
+                    type="button"
+                    className="product-message-button"
+                    disabled={!canMessage}
+                    onClick={handleMessageSeller}
+                  >
+                    Message about this item
+                  </button>
+
+                  <details className="product-inquiry-helper">
+                    <summary>
+                      Need help? Copy a starter message
+                    </summary>
+
+                    <p>
+                      This is optional—you can edit it or write your
+                      own message instead.
+                    </p>
+
+                    <div className="product-inquiry-preview">
+                      {inquiryText.split('\n').map((line, index) => (
+                        <span key={`${line}-${index}`}>
+                          {line || <br />}
+                        </span>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      className="product-copy-button"
+                      disabled={!canMessage}
+                      onClick={handleCopyInquiry}
+                    >
+                      {copyStatus === 'copied'
+                        ? 'Starter message copied ✓'
+                        : 'Copy starter message'}
+                    </button>
+
+                    {copyStatus === 'failed' && (
+                      <p className="product-copy-status error" role="alert">
+                        The message couldn’t be copied. You can
+                        select it above and copy it manually.
+                      </p>
+                    )}
+
+                    {copyStatus === 'copied' && (
+                      <p className="product-copy-status" aria-live="polite">
+                        Copied—paste it in Messenger whenever you’re
+                        ready.
+                      </p>
+                    )}
+                  </details>
+                </>
+              )}
+
+              {isAvailable && (
+                <p className="product-reservation-note">
+                  Once confirmed in Messenger, requested quantities
+                  are held for 24 hours while payment or meetup
+                  arrangements are finalized.
+                </p>
+              )}
             </section>
           </div>
         </div>
