@@ -22,10 +22,19 @@ function StoreInfoSections() {
           </h2>
 
           <p>
-            This website is the live catalog. Browse the actual
-            items and send a message through Facebook to confirm
-            quantities, payment, and delivery privately. The shop
-            is based in Cavite.
+            This website is the live catalog. Browse the{' '}
+            <strong className="store-text-highlight">
+              actual items
+            </strong>{' '}
+            and send a message through{' '}
+            <strong className="store-text-highlight">
+              Facebook Messenger
+            </strong>{' '}
+            to confirm quantities, payment, and delivery privately.
+            The shop is{' '}
+            <strong className="store-text-highlight">
+              based in Cavite
+            </strong>.
           </p>
         </div>
 
@@ -41,8 +50,10 @@ function StoreInfoSections() {
 
             <p>
               Look through the available items and open
-              any product to see its details, price,
-              condition, and availability.
+              any product to see its{' '}
+              <strong className="store-text-highlight">
+                details, price, condition, and availability
+              </strong>.
             </p>
           </article>
 
@@ -58,7 +69,11 @@ function StoreInfoSections() {
             <p>
               Open a product to see the full description, photos,
               price, and available quantity. When you’re ready,
-              tap Message about this item to open Messenger.
+              tap{' '}
+              <strong className="store-text-highlight">
+                Message about this item
+              </strong>{' '}
+              to open Messenger.
             </p>
           </article>
 
@@ -74,7 +89,10 @@ function StoreInfoSections() {
             <p>
               Cash meetup or personal delivery may be available
               near Cavite. For farther locations, Lalamove can be
-              arranged with the delivery fee paid by the buyer.
+              arranged with the{' '}
+              <strong className="store-text-highlight">
+                delivery fee paid by the buyer
+              </strong>.
             </p>
           </article>
 
@@ -89,23 +107,37 @@ function StoreInfoSections() {
 
             <p>
               Requested quantities are reserved after confirmation
-              in Messenger and held for 24 hours. Cash is accepted
-              at meetup; Lalamove orders require payment before
-              dispatch.
+              in Messenger and{' '}
+              <strong className="store-text-highlight">
+                held for 24 hours
+              </strong>. Cash is accepted at meetup; Lalamove orders
+              require{' '}
+              <strong className="store-text-highlight">
+                payment before dispatch
+              </strong>.
             </p>
           </article>
         </div>
 
-        <p className="store-process-note">
-          Listed prices do not include delivery. Lalamove fees
-          are based on the live app quote at booking. No payment
-          or checkout happens directly on this website. Payment
-          account details and exact addresses are only shared
-          privately after confirmation. GCash, Maya, GoTyme, and
-          PayPal may be arranged through Messenger. If a hold is
-          not confirmed within 24 hours, the quantity may be offered
-          to the next interested buyer.
-        </p>
+        <div className="store-process-note">
+          <p>
+            Listed prices do not include delivery. Lalamove fees
+            are based on the live app quote at booking. GCash, Maya,
+            GoTyme, and PayPal may be arranged through Messenger. If
+            a hold is not confirmed within 24 hours, the quantity may
+            be offered to the next interested buyer.
+          </p>
+
+          <p className="store-safety-note">
+            <strong>
+              No payment or checkout happens directly on this website.
+            </strong>{' '}
+            Payment account details and exact addresses are{' '}
+            <strong>
+              only shared privately after confirmation
+            </strong>.
+          </p>
+        </div>
       </section>
 
       <section

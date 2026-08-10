@@ -22,6 +22,11 @@
   line-height: 1.7;
 }
 
+.store-text-highlight {
+  color: #314D35;
+  font-weight: 800;
+}
+
 .how-it-works-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -70,6 +75,26 @@
   color: #5F5C52;
   font-size: 0.9rem;
   line-height: 1.65;
+}
+
+.store-process-note > p {
+  margin: 0;
+}
+
+.store-safety-note {
+  margin-top: 0.9rem !important;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(62, 91, 62, 0.2);
+  border-left: 4px solid #B5502C;
+  border-radius: 5px 14px 5px 14px;
+  background: rgba(246, 241, 228, 0.88);
+  color: #4B493F;
+  box-shadow: 0 8px 20px rgba(46, 42, 34, 0.06);
+}
+
+.store-safety-note strong {
+  color: #314D35;
+  font-weight: 800;
 }
 
 .contact-section {
