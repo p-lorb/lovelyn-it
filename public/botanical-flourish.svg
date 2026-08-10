@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 64" fill="none">
+  <defs>
+    <linearGradient id="sage" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#D9DFC9"/>
+      <stop offset="1" stop-color="#AAB98E"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M8 39C58 17 98 51 130 32C162 13 202 47 252 25" stroke="#3E5B3E" stroke-width="2.4" stroke-linecap="round"/>
+
+  <g fill="url(#sage)" stroke="#3E5B3E" stroke-width="1.7">
+    <path d="M39 30C28 14 31 4 39 1C49 12 49 22 39 30Z"/>
+    <path d="M59 29C65 12 76 8 84 13C79 26 70 32 59 29Z"/>
+    <path d="M82 37C74 49 76 59 83 63C93 54 93 44 82 37Z"/>
+    <path d="M109 38C101 23 105 13 114 10C123 22 121 32 109 38Z"/>
+    <path d="M151 27C143 13 147 3 156 1C164 14 162 23 151 27Z"/>
+    <path d="M177 27C184 13 195 10 202 16C197 29 188 33 177 27Z"/>
+    <path d="M204 34C198 48 202 57 210 60C219 49 216 40 204 34Z"/>
+    <path d="M227 29C231 15 241 11 249 16C245 28 237 33 227 29Z"/>
+  </g>
+
+  <g transform="translate(130 32)">
+    <path d="M0 0C-9-11-7-21 1-26C9-19 10-9 0 0Z" fill="#FFFDF8" stroke="#B5502C" stroke-width="1.8"/>
+    <path d="M0 0C10-9 20-8 25-1C18 8 8 9 0 0Z" fill="#E8C9B4" stroke="#B5502C" stroke-width="1.8"/>
+    <path d="M0 0C8 10 5 20-3 24C-11 17-10 7 0 0Z" fill="#FFFDF8" stroke="#B5502C" stroke-width="1.8"/>
+    <path d="M0 0C-10 8-20 5-23-3C-16-11-6-10 0 0Z" fill="#E8C9B4" stroke="#B5502C" stroke-width="1.8"/>
+    <circle r="5.5" fill="#B5502C"/>
+    <circle r="2" fill="#E8B18E"/>
+  </g>
+</svg>

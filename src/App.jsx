@@ -9,6 +9,7 @@ import ProductPage from './pages/ProductPage'
 import AdminPage from './pages/AdminPage'
 import AdminEditProductPage from './pages/AdminEditProductPage'
 import AdminAddProductPage from './pages/AdminAddProductPage'
+import NotFoundPage from './pages/NotFoundPage'
 import { supabase } from './lib/supabase'
 
 function App() {
@@ -142,8 +143,8 @@ function App() {
 
             <p className="hero-text">
               Bags, wallets, kitchenware, appliances,
-              and more — new, unused items from Lovelyn’s
-              collection, ready for new homes.
+              and more—new, unused items from Lovelyn’s
+              collection, available while stocks last.
             </p>
 
             <a
@@ -198,16 +199,73 @@ function App() {
         </section>
 
         <section
+          className="store-highlights"
+          aria-label="Why shop Lovelyn It"
+        >
+          <article className="store-highlight">
+            <span className="store-highlight-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 7.5h3l1.4-2h7.2l1.4 2h3v11H4z" />
+                <circle cx="12" cy="13" r="3.2" />
+              </svg>
+            </span>
+
+            <div>
+              <strong>Actual item photos</strong>
+              <span>See the real products currently available.</span>
+            </div>
+          </article>
+
+          <article className="store-highlight">
+            <span className="store-highlight-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M5 7.5 12 4l7 3.5v9L12 20l-7-3.5z" />
+                <path d="m5 7.5 7 3.5 7-3.5M12 11v9" />
+              </svg>
+            </span>
+
+            <div>
+              <strong>Limited available stock</strong>
+              <span>Quantities are shown clearly on every listing.</span>
+            </div>
+          </article>
+
+          <article className="store-highlight">
+            <span className="store-highlight-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 21s6-5.6 6-11a6 6 0 1 0-12 0c0 5.4 6 11 6 11Z" />
+                <circle cx="12" cy="10" r="2" />
+              </svg>
+            </span>
+
+            <div>
+              <strong>Cavite-based</strong>
+              <span>Meetup nearby or arrange Lalamove privately.</span>
+            </div>
+          </article>
+        </section>
+
+        <section
           className="shelf"
           id="shop"
           tabIndex="-1"
         >
           <div className="shelf-header">
-            <h2>
-              On the shelf
-            </h2>
+            <div>
+              <p className="shelf-kicker">
+                Browse the collection
+              </p>
 
-            <span>
+              <h2>
+                On the shelf
+              </h2>
+
+              <p className="shelf-intro">
+                Every card shows the current price and available quantity.
+              </p>
+            </div>
+
+            <span className="shelf-count">
               {loading
                 ? 'Loading...'
                 : `${filteredProducts.length} items`}
@@ -306,6 +364,11 @@ function App() {
       <Route
         path="/admin/products/:id/edit"
         element={<AdminEditProductPage />}
+      />
+
+      <Route
+        path="*"
+        element={<NotFoundPage />}
       />
     </Routes>
   )
