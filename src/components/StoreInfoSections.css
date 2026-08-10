@@ -81,6 +81,42 @@
   margin: 0;
 }
 
+.payment-options {
+  margin-top: 1rem;
+}
+
+.payment-options-label {
+  color: #314D35;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.payment-options-list {
+  margin: 0.6rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+}
+
+.payment-options-list li {
+  padding: 0.38rem 0.68rem;
+  border: 1px solid rgba(62, 91, 62, 0.24);
+  border-radius: 999px;
+  background: rgba(246, 241, 228, 0.82);
+  color: #314D35;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.payment-options-help {
+  margin-top: 0.55rem !important;
+  font-size: 0.84rem;
+}
+
 .store-safety-note {
   margin-top: 0.9rem !important;
   padding: 1rem 1.1rem;

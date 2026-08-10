@@ -122,11 +122,32 @@ function StoreInfoSections() {
         <div className="store-process-note">
           <p>
             Listed prices do not include delivery. Lalamove fees
-            are based on the live app quote at booking. GCash, Maya,
-            GoTyme, and PayPal may be arranged through Messenger. If
-            a hold is not confirmed within 24 hours, the quantity may
-            be offered to the next interested buyer.
+            are based on the live app quote at booking. If a hold is
+            not confirmed within 24 hours, the quantity may be offered
+            to the next interested buyer.
           </p>
+
+          <div
+            className="payment-options"
+            aria-label="Available payment options"
+          >
+            <strong className="payment-options-label">
+              Available payment options
+            </strong>
+
+            <ul className="payment-options-list">
+              <li>Cash at meetup</li>
+              <li>GCash</li>
+              <li>Maya</li>
+              <li>GoTyme</li>
+              <li>PayPal</li>
+            </ul>
+
+            <p className="payment-options-help">
+              Final payment arrangements are confirmed privately
+              through Messenger.
+            </p>
+          </div>
 
           <p className="store-safety-note">
             <strong>
