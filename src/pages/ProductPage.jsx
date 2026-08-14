@@ -4,6 +4,9 @@ import { supabase } from '../lib/supabase'
 import { getProductDescription } from '../lib/productDescriptions'
 import './ProductPage.css'
 
+const CATALOG_SCROLL_RESTORE_KEY =
+  'lovelyn-it:restore-catalog-scroll'
+
 function getPublicImageUrl(imagePath) {
   if (!imagePath) {
     return null
@@ -80,6 +83,7 @@ function ProductPage() {
   const [galleryImages, setGalleryImages] = useState([])
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [copyStatus, setCopyStatus] = useState('idle')
+  const [shareStatus, setShareStatus] = useState('idle')
 
   const [loading, setLoading] = useState(true)
 
@@ -96,6 +100,7 @@ function ProductPage() {
       setGalleryImages([])
       setSelectedImageIndex(0)
       setCopyStatus('idle')
+      setShareStatus('idle')
 
       const {
         data: productData,
@@ -169,6 +174,34 @@ function ProductPage() {
     loadProduct()
   }, [slug])
 
+  useEffect(() => {
+    function requestRestoreOnBrowserBack() {
+      window.sessionStorage.setItem(
+        CATALOG_SCROLL_RESTORE_KEY,
+        'true'
+      )
+    }
+
+    window.addEventListener(
+      'popstate',
+      requestRestoreOnBrowserBack
+    )
+
+    return () => {
+      window.removeEventListener(
+        'popstate',
+        requestRestoreOnBrowserBack
+      )
+    }
+  }, [])
+
+  function requestCatalogRestore() {
+    window.sessionStorage.setItem(
+      CATALOG_SCROLL_RESTORE_KEY,
+      'true'
+    )
+  }
+
   if (loading) {
     return (
       <main className="product-page-state">
@@ -189,6 +222,7 @@ function ProductPage() {
         <Link
           to="/"
           className="back-link"
+          onClick={requestCatalogRestore}
         >
           ← Back to shop
         </Link>
@@ -315,6 +349,36 @@ function ProductPage() {
     }
   }
 
+  async function handleShareProduct() {
+    const productUrl =
+      `${window.location.origin}/products/${product.slug}`
+
+    const shareData = {
+      title: `${product.name} | Lovelyn It!`,
+      text: `${product.name} — ${priceLabel}. View the actual item photos on Lovelyn It!`,
+      url: productUrl,
+    }
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData)
+        setShareStatus('shared')
+        return
+      }
+
+      await navigator.clipboard.writeText(productUrl)
+      setShareStatus('copied')
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        setShareStatus('idle')
+        return
+      }
+
+      console.error('Share product error:', error)
+      setShareStatus('failed')
+    }
+  }
+
   return (
     <>
       <a className="skip-link" href="#main-content">
@@ -346,8 +410,9 @@ function ProductPage() {
 
       <main className="product-page" id="main-content" tabIndex="-1">
         <Link
-          to="/#shop"
+          to="/"
           className="back-link"
+          onClick={requestCatalogRestore}
         >
           ← Back to shop
         </Link>
@@ -517,6 +582,46 @@ function ProductPage() {
               {product.price !== null
                 ? `₱${product.price}`
                 : 'Price coming soon'}
+            </div>
+
+            <div className="product-share">
+              <button
+                type="button"
+                className="product-share-button"
+                onClick={handleShareProduct}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <circle cx="18" cy="5" r="2.5" />
+                  <circle cx="6" cy="12" r="2.5" />
+                  <circle cx="18" cy="19" r="2.5" />
+                  <path d="m8.2 10.8 7.6-4.5M8.2 13.2l7.6 4.5" />
+                </svg>
+
+                <span>
+                  {shareStatus === 'copied'
+                    ? 'Product link copied ✓'
+                    : shareStatus === 'shared'
+                      ? 'Shared ✓'
+                      : 'Share this item'}
+                </span>
+              </button>
+
+              <p
+                className={`product-share-status ${
+                  shareStatus === 'failed' ? 'error' : ''
+                }`}
+                aria-live="polite"
+              >
+                {shareStatus === 'copied' &&
+                  'The link is ready to paste into Facebook, Messenger, or a group post.'}
+                {shareStatus === 'shared' &&
+                  'The product was shared successfully.'}
+                {shareStatus === 'failed' &&
+                  'The link couldn’t be shared. You can copy it from the address bar instead.'}
+              </p>
             </div>
 
             <section className="product-description">

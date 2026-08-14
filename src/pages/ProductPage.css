@@ -181,6 +181,64 @@
   line-height: 1.55;
 }
 
+.product-share {
+  max-width: 520px;
+  margin-top: -0.25rem;
+}
+
+.product-share-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 46px;
+  padding: 0.72rem 1rem;
+  border: 1px solid rgba(62, 91, 62, 0.3);
+  border-radius: 999px;
+  background: rgba(62, 91, 62, 0.07);
+  color: #3E5B3E;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.product-share-button:hover {
+  background: rgba(62, 91, 62, 0.13);
+  transform: translateY(-1px);
+}
+
+.product-share-button:focus-visible {
+  outline: 3px solid rgba(62, 91, 62, 0.25);
+  outline-offset: 2px;
+}
+
+.product-share-button svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.product-share-status {
+  min-height: 1.35rem;
+  margin: 0.45rem 0 0;
+  color: #3E5B3E;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.product-share-status:empty {
+  display: none;
+}
+
+.product-share-status.error {
+  color: #B5502C;
+}
+
 .product-inquiry {
   max-width: 520px;
   margin-top: 1.5rem;
@@ -338,5 +396,15 @@
 
   .product-copy-button {
     width: 100%;
+  }
+
+  .product-share-button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-share-button {
+    transition: none;
   }
 }

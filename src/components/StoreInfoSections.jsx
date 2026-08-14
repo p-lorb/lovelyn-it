@@ -149,6 +149,31 @@ function StoreInfoSections() {
             </p>
           </div>
 
+          <div className="store-support-note">
+            <div className="store-support-icon" aria-hidden="true">
+              ✓
+            </div>
+
+            <div>
+              <strong>
+                If something isn’t right
+              </strong>
+
+              <p>
+                If an item is defective, doesn’t work as described,
+                or is materially different from its listing, message
+                us promptly with a photo or video. Once confirmed and
+                returned with its included parts, we’ll provide a
+                refund.
+              </p>
+
+              <p className="store-support-limit">
+                Change-of-mind returns and damage after purchase are
+                not covered.
+              </p>
+            </div>
+          </div>
+
           <p className="store-safety-note">
             <strong>
               No payment or checkout happens directly on this website.

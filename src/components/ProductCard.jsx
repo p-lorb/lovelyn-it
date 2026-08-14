@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
-function ProductCard({ product }) {
+function ProductCard({ product, onOpenProduct }) {
   const isAvailable = product.status === 'available'
   const isReserved = product.status === 'reserved'
   const isSold = product.status === 'sold'
@@ -26,6 +26,7 @@ function ProductCard({ product }) {
       <Link
         to={`/products/${product.slug}`}
         className="product-card-link"
+        onClick={onOpenProduct}
       >
         <div className="product-photo">
           {imageUrl ? (
@@ -68,6 +69,7 @@ function ProductCard({ product }) {
           <Link
             to={`/products/${product.slug}`}
             className="product-name-link"
+            onClick={onOpenProduct}
           >
             {product.name}
           </Link>
@@ -103,6 +105,7 @@ function ProductCard({ product }) {
           <Link
             to={`/products/${product.slug}`}
             className="product-card-action"
+            onClick={onOpenProduct}
           >
             View details
           </Link>

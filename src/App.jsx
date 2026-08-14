@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Link, Routes, Route } from 'react-router-dom'
+import {
+  Link,
+  Routes,
+  Route,
+  useLocation,
+} from 'react-router-dom'
 import './App.css'
 import './components/StoreInfoSections.css'
 
@@ -12,9 +17,16 @@ import AdminAddProductPage from './pages/AdminAddProductPage'
 import NotFoundPage from './pages/NotFoundPage'
 import { supabase } from './lib/supabase'
 
+const CATALOG_SCROLL_POSITION_KEY =
+  'lovelyn-it:catalog-scroll-position'
+const CATALOG_SCROLL_RESTORE_KEY =
+  'lovelyn-it:restore-catalog-scroll'
+
 function App() {
+  const location = useLocation()
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showBackToTop, setShowBackToTop] = useState(false)
 
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
@@ -46,6 +58,91 @@ function App() {
 
     loadProducts()
   }, [])
+
+  useEffect(() => {
+    function updateBackToTopVisibility() {
+      setShowBackToTop(window.scrollY > 600)
+    }
+
+    updateBackToTopVisibility()
+    window.addEventListener('scroll', updateBackToTopVisibility, {
+      passive: true,
+    })
+
+    return () => {
+      window.removeEventListener('scroll', updateBackToTopVisibility)
+    }
+  }, [])
+
+  function scrollBackToTop() {
+    const prefersReducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)'
+    ).matches
+
+    window.scrollTo({
+      top: 0,
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+    })
+  }
+
+  function handleBrandClick(event) {
+    event.preventDefault()
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${window.location.search}`
+    )
+    scrollBackToTop()
+  }
+
+  function rememberCatalogPosition() {
+    window.sessionStorage.setItem(
+      CATALOG_SCROLL_POSITION_KEY,
+      String(window.scrollY)
+    )
+  }
+
+  useEffect(() => {
+    if (location.pathname !== '/' || loading) {
+      return undefined
+    }
+
+    const shouldRestore =
+      window.sessionStorage.getItem(
+        CATALOG_SCROLL_RESTORE_KEY
+      ) === 'true'
+
+    if (!shouldRestore) {
+      return undefined
+    }
+
+    const savedPosition = Number(
+      window.sessionStorage.getItem(
+        CATALOG_SCROLL_POSITION_KEY
+      )
+    )
+
+    if (!Number.isFinite(savedPosition)) {
+      window.sessionStorage.removeItem(
+        CATALOG_SCROLL_RESTORE_KEY
+      )
+      return undefined
+    }
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      window.scrollTo({
+        top: savedPosition,
+        behavior: 'auto',
+      })
+      window.sessionStorage.removeItem(
+        CATALOG_SCROLL_RESTORE_KEY
+      )
+    })
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame)
+    }
+  }, [loading, location.key, location.pathname])
 
   const filteredProducts = products.filter((product) => {
     const query = searchQuery.toLowerCase().trim()
@@ -111,9 +208,14 @@ function App() {
       </a>
 
       <header className="site-header">
-        <div className="brand">
+        <a
+          className="brand brand-link"
+          href="/"
+          aria-label="Lovelyn It! — back to top"
+          onClick={handleBrandClick}
+        >
           Lovelyn It!
-        </div>
+        </a>
 
         <nav className="nav">
           <a href="#shop">
@@ -174,6 +276,7 @@ function App() {
                   className="hero-product"
                   key={product.id}
                   aria-label={`View ${product.name}`}
+                  onClick={rememberCatalogPosition}
                 >
                   <img
                     src={getProductImageUrl(product.image_path)}
@@ -324,6 +427,7 @@ function App() {
                 <ProductCard
                   key={product.id}
                   product={product}
+                  onOpenProduct={rememberCatalogPosition}
                 />
               ))}
             </div>
@@ -336,6 +440,20 @@ function App() {
 
         <StoreInfoSections />
       </main>
+
+      {showBackToTop && (
+        <button
+          type="button"
+          className="back-to-top"
+          aria-label="Back to top"
+          onClick={scrollBackToTop}
+        >
+          <span className="back-to-top-arrow" aria-hidden="true">
+            ↑
+          </span>
+          <span>Back to top</span>
+        </button>
+      )}
     </>
   )
 
