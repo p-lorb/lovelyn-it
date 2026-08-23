@@ -2,6 +2,14 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024
+
+const ALLOWED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]
+
 function AdminAddProductPage() {
   const [session, setSession] = useState(null)
   const [checkingSession, setCheckingSession] = useState(true)
@@ -20,6 +28,16 @@ function AdminAddProductPage() {
   const [saving, setSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [createdProduct, setCreatedProduct] = useState(null)
+  const [selectedCoverImage, setSelectedCoverImage] = useState(null)
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState('')
+
+  useEffect(() => {
+    return () => {
+      if (coverPreviewUrl) {
+        URL.revokeObjectURL(coverPreviewUrl)
+      }
+    }
+  }, [coverPreviewUrl])
 
   useEffect(() => {
     async function checkSession() {
@@ -182,6 +200,99 @@ function AdminAddProductPage() {
 
     setCreatedProduct(null)
     setErrorMessage('')
+    setSelectedCoverImage(null)
+
+    if (coverPreviewUrl) {
+      URL.revokeObjectURL(coverPreviewUrl)
+    }
+
+    setCoverPreviewUrl('')
+  }
+
+  function validateImage(file) {
+    if (!file) {
+      return 'Please choose an image.'
+    }
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      return 'Images must be JPEG, PNG, or WebP.'
+    }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      return 'The cover photo must be 10 MB or smaller.'
+    }
+
+    return null
+  }
+
+  function getFileExtension(file) {
+    if (file.type === 'image/png') {
+      return 'png'
+    }
+
+    if (file.type === 'image/webp') {
+      return 'webp'
+    }
+
+    return 'jpg'
+  }
+
+  function handleCoverSelection(event) {
+    const file = event.target.files?.[0] ?? null
+
+    if (!file) {
+      return
+    }
+
+    const validationError = validateImage(file)
+
+    if (validationError) {
+      setErrorMessage(validationError)
+      event.target.value = ''
+      return
+    }
+
+    setErrorMessage('')
+    setSelectedCoverImage(file)
+
+    if (coverPreviewUrl) {
+      URL.revokeObjectURL(coverPreviewUrl)
+    }
+
+    setCoverPreviewUrl(URL.createObjectURL(file))
+  }
+
+  async function uploadCoverPhoto(productId, file) {
+    const imagePath =
+      `products/${productId}/cover/` +
+      `${Date.now()}.${getFileExtension(file)}`
+
+    const { error: uploadError } = await supabase
+      .storage
+      .from('product-images')
+      .upload(imagePath, file, {
+        cacheControl: '3600',
+        contentType: file.type,
+        upsert: false,
+      })
+
+    if (uploadError) {
+      throw uploadError
+    }
+
+    const { error: attachError } = await supabase
+      .from('products')
+      .update({ image_path: imagePath })
+      .eq('id', productId)
+
+    if (attachError) {
+      await supabase
+        .storage
+        .from('product-images')
+        .remove([imagePath])
+
+      throw attachError
+    }
   }
 
   async function handleSubmit(event) {
@@ -329,6 +440,27 @@ function AdminAddProductPage() {
         throw error
       }
 
+      if (selectedCoverImage) {
+        try {
+          await uploadCoverPhoto(
+            data.id,
+            selectedCoverImage
+          )
+        } catch (imageError) {
+          console.error(
+            'Create product cover image error:',
+            imageError
+          )
+
+          setCreatedProduct({
+            ...data,
+            imageUploadFailed: true,
+          })
+          setSaving(false)
+          return
+        }
+      }
+
       setCreatedProduct(data)
     } catch (error) {
       console.error(
@@ -383,8 +515,9 @@ function AdminAddProductPage() {
           </h1>
 
           <p>
-            The product was added successfully
-            and is currently unpublished.
+            {createdProduct.imageUploadFailed
+              ? 'The product was added, but its cover photo could not upload. Add it from Edit product.'
+              : 'The product was added successfully and is currently unpublished.'}
           </p>
 
           <div className="admin-add-success-url">
@@ -445,9 +578,14 @@ function AdminAddProductPage() {
           </h1>
 
           <p>
-            Create a new inventory item.
-            New products start unpublished.
+            Add the basics now, then add photos and
+            publish it when it is ready.
           </p>
+        </div>
+
+        <div className="admin-add-draft-badge">
+          <span aria-hidden="true">✦</span>
+          Starts as a draft
         </div>
       </div>
 
@@ -461,9 +599,26 @@ function AdminAddProductPage() {
         className="admin-add-form"
         onSubmit={handleSubmit}
       >
-        <div className="admin-add-form-grid">
-          <label className="admin-add-field admin-add-field-wide">
-            Product name
+        <section className="admin-add-section">
+          <div className="admin-add-section-heading">
+            <span className="admin-add-section-number">
+              1
+            </span>
+
+            <div>
+              <h2>
+                Product details
+              </h2>
+
+              <p>
+                A clear name makes the item easier to find.
+              </p>
+            </div>
+          </div>
+
+          <div className="admin-add-form-grid">
+            <label className="admin-add-field admin-add-field-wide">
+              Product name
 
             <input
               type="text"
@@ -473,10 +628,10 @@ function AdminAddProductPage() {
               placeholder="Product name"
               required
             />
-          </label>
+            </label>
 
-          <label className="admin-add-field">
-            Brand
+            <label className="admin-add-field">
+              Brand
 
             <input
               type="text"
@@ -485,10 +640,10 @@ function AdminAddProductPage() {
               onChange={handleFieldChange}
               placeholder="Optional"
             />
-          </label>
+            </label>
 
-          <label className="admin-add-field">
-            Category
+            <label className="admin-add-field">
+              Category
 
             <select
               name="category"
@@ -503,14 +658,42 @@ function AdminAddProductPage() {
                 Clothing
               </option>
 
+              <option value="Accessories">
+                Accessories
+              </option>
+
+              <option value="Intimates">
+                Intimates
+              </option>
+
               <option value="Kitchen & Home">
                 Kitchen & Home
               </option>
             </select>
-          </label>
+            </label>
+          </div>
+        </section>
 
-          <label className="admin-add-field">
-            Condition
+        <section className="admin-add-section">
+          <div className="admin-add-section-heading">
+            <span className="admin-add-section-number">
+              2
+            </span>
+
+            <div>
+              <h2>
+                Selling details
+              </h2>
+
+              <p>
+                Set the item condition, price, and availability.
+              </p>
+            </div>
+          </div>
+
+          <div className="admin-add-form-grid">
+            <label className="admin-add-field">
+              Condition
 
             <input
               type="text"
@@ -518,10 +701,10 @@ function AdminAddProductPage() {
               value={formData.condition}
               onChange={handleFieldChange}
             />
-          </label>
+            </label>
 
-          <label className="admin-add-field">
-            Stock
+            <label className="admin-add-field">
+              Stock
 
             <input
               type="number"
@@ -531,10 +714,10 @@ function AdminAddProductPage() {
               value={formData.stock}
               onChange={handleFieldChange}
             />
-          </label>
+            </label>
 
-          <label className="admin-add-field">
-            Price
+            <label className="admin-add-field">
+              Price
 
             <div className="admin-add-price-input">
               <span>
@@ -551,10 +734,10 @@ function AdminAddProductPage() {
                 placeholder="Leave blank for now"
               />
             </div>
-          </label>
+            </label>
 
-          <label className="admin-add-field">
-            Status
+            <label className="admin-add-field">
+              Status
 
             <select
               name="status"
@@ -573,9 +756,78 @@ function AdminAddProductPage() {
                 Sold
               </option>
             </select>
-          </label>
+            </label>
+          </div>
+        </section>
 
-          <label className="admin-add-field admin-add-field-wide">
+        <section className="admin-add-section">
+          <div className="admin-add-section-heading">
+            <span className="admin-add-section-number">
+              3
+            </span>
+
+            <div>
+              <h2>
+                Cover photo
+              </h2>
+
+              <p>
+                Add the main image buyers will see first. You can add more photos later.
+              </p>
+            </div>
+          </div>
+
+          <div className="admin-add-cover-picker">
+            <div className="admin-add-cover-preview">
+              {coverPreviewUrl ? (
+                <img
+                  src={coverPreviewUrl}
+                  alt="Selected cover preview"
+                />
+              ) : (
+                <span>No cover photo selected</span>
+              )}
+            </div>
+
+            <div className="admin-add-cover-content">
+              <label className="admin-add-cover-button">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleCoverSelection}
+                />
+                {selectedCoverImage
+                  ? 'Choose a different photo'
+                  : 'Choose cover photo'}
+              </label>
+
+              <p>
+                {selectedCoverImage
+                  ? selectedCoverImage.name
+                  : 'JPEG, PNG, or WebP up to 10 MB.'}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="admin-add-section">
+          <div className="admin-add-section-heading">
+            <span className="admin-add-section-number">
+              4
+            </span>
+
+            <div>
+              <h2>
+                Description
+              </h2>
+
+              <p>
+                Keep it short and helpful. You can always refine it later.
+              </p>
+            </div>
+          </div>
+
+          <label className="admin-add-field">
             Description
 
             <textarea
@@ -586,7 +838,7 @@ function AdminAddProductPage() {
               placeholder="Description can be added later."
             />
           </label>
-        </div>
+        </section>
 
         {!inventoryValid && (
           <div className="admin-edit-error">
@@ -598,14 +850,19 @@ function AdminAddProductPage() {
         )}
 
         <div className="admin-add-note">
-          <strong>
-            Starts unpublished
-          </strong>
-
-          <span>
-            You can add photos and review the
-            product before making it public.
+          <span className="admin-add-note-icon" aria-hidden="true">
+            ✓
           </span>
+
+          <div>
+            <strong>
+              You are creating a private draft
+            </strong>
+
+            <span>
+              Add photos and review the product before making it public.
+            </span>
+          </div>
         </div>
 
         <div className="admin-add-actions">

@@ -35,6 +35,8 @@ function App() {
     'All',
     'Bags & Wallets',
     'Clothing',
+    'Accessories',
+    'Intimates',
     'Kitchen & Home',
   ]
 

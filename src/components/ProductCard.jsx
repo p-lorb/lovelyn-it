@@ -34,6 +34,11 @@ function ProductCard({ product, onOpenProduct }) {
               src={imageUrl}
               alt={product.name}
               className="product-card-image"
+              loading="lazy"
+              decoding="async"
+              fetchPriority="low"
+              width="600"
+              height="600"
             />
           ) : (
             <span>PHOTO</span>

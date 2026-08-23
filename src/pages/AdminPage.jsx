@@ -804,6 +804,14 @@ function AdminPage() {
                 Clothing
               </option>
 
+              <option value="Accessories">
+                Accessories
+              </option>
+
+              <option value="Intimates">
+                Intimates
+              </option>
+
               <option value="Kitchen & Home">
                 Kitchen & Home
               </option>
