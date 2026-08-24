@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   Link,
   Routes,
@@ -8,7 +8,9 @@ import {
 import './App.css'
 import './components/StoreInfoSections.css'
 
-import ProductCard from './components/ProductCard'
+import ProductCard, {
+  ProductCardSkeleton,
+} from './components/ProductCard'
 import StoreInfoSections from './components/StoreInfoSections'
 import ProductPage from './pages/ProductPage'
 import AdminPage from './pages/AdminPage'
@@ -26,6 +28,7 @@ function App() {
   const location = useLocation()
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [catalogError, setCatalogError] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -40,26 +43,36 @@ function App() {
     'Kitchen & Home',
   ]
 
-  useEffect(() => {
-    async function loadProducts() {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('published', true)
-        .order('id', { ascending: true })
+  const loadProducts = useCallback(async () => {
+    setLoading(true)
+    setCatalogError(false)
 
-      if (error) {
-        console.error('Products error:', error)
-        setLoading(false)
-        return
-      }
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('published', true)
+      .order('id', { ascending: true })
 
-      setProducts(data)
+    if (error) {
+      console.error('Products error:', error)
+      setCatalogError(true)
       setLoading(false)
+      return
     }
 
-    loadProducts()
+    setProducts(data ?? [])
+    setLoading(false)
   }, [])
+
+  useEffect(() => {
+    const requestTimer = window.setTimeout(() => {
+      loadProducts()
+    }, 0)
+
+    return () => {
+      window.clearTimeout(requestTimer)
+    }
+  }, [loadProducts])
 
   useEffect(() => {
     function updateBackToTopVisibility() {
@@ -271,6 +284,10 @@ function App() {
                   aria-hidden="true"
                 />
               ))
+            ) : catalogError ? (
+              <div className="hero-empty">
+                The collection needs a moment to load.
+              </div>
             ) : featuredProducts.length > 0 ? (
               featuredProducts.map((product, index) => (
                 <Link
@@ -373,6 +390,8 @@ function App() {
             <span className="shelf-count">
               {loading
                 ? 'Loading...'
+                : catalogError
+                  ? 'Unavailable'
                 : `${filteredProducts.length} items`}
             </span>
           </div>
@@ -391,6 +410,7 @@ function App() {
                 onChange={(event) =>
                   setSearchQuery(event.target.value)
                 }
+                disabled={loading}
               />
             </div>
 
@@ -412,6 +432,7 @@ function App() {
                   onClick={() =>
                     setSelectedCategory(category)
                   }
+                  disabled={loading}
                 >
                   {category}
                 </button>
@@ -420,9 +441,35 @@ function App() {
           </div>
 
           {loading ? (
-            <p className="no-results">
-              Loading products...
-            </p>
+            <div
+              className="product-grid product-grid-loading"
+              role="status"
+              aria-label="Loading products"
+            >
+              {Array.from({ length: 8 }).map((_, index) => (
+                <ProductCardSkeleton key={index} />
+              ))}
+            </div>
+          ) : catalogError ? (
+            <div className="catalog-error" role="alert">
+              <div>
+                <h3>
+                  We couldn’t load the collection just now.
+                </h3>
+
+                <p>
+                  Please check your connection and try again.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={loadProducts}
+                className="catalog-retry-button"
+              >
+                Try again
+              </button>
+            </div>
           ) : filteredProducts.length > 0 ? (
             <div className="product-grid">
               {filteredProducts.map((product) => (

@@ -1,10 +1,36 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+
+export function ProductCardSkeleton() {
+  return (
+    <article
+      className="product-card product-card-skeleton"
+      aria-hidden="true"
+    >
+      <div className="product-photo product-skeleton-photo" />
+
+      <div className="product-info product-skeleton-info">
+        <span className="product-skeleton-line product-skeleton-brand" />
+        <span className="product-skeleton-line product-skeleton-title" />
+        <span className="product-skeleton-line product-skeleton-meta" />
+        <span className="product-skeleton-pill" />
+
+        <div className="product-skeleton-footer">
+          <span className="product-skeleton-price" />
+          <span className="product-skeleton-action" />
+        </div>
+      </div>
+    </article>
+  )
+}
 
 function ProductCard({ product, onOpenProduct }) {
   const isAvailable = product.status === 'available'
   const isReserved = product.status === 'reserved'
   const isSold = product.status === 'sold'
+  const [imageLoaded, setImageLoaded] = useState(false)
+  const [imageUnavailable, setImageUnavailable] = useState(false)
 
   let imageUrl = null
 
@@ -29,19 +55,25 @@ function ProductCard({ product, onOpenProduct }) {
         onClick={onOpenProduct}
       >
         <div className="product-photo">
-          {imageUrl ? (
+          {imageUrl && !imageUnavailable ? (
             <img
               src={imageUrl}
               alt={product.name}
-              className="product-card-image"
+              className={`product-card-image ${
+                imageLoaded ? 'is-loaded' : ''
+              }`}
               loading="lazy"
               decoding="async"
               fetchPriority="low"
               width="600"
               height="600"
+              onLoad={() => setImageLoaded(true)}
+              onError={() => setImageUnavailable(true)}
             />
           ) : (
-            <span>PHOTO</span>
+            <span className="product-image-fallback">
+              Photo unavailable
+            </span>
           )}
 
           {!isAvailable && (

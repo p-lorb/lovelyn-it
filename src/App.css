@@ -500,6 +500,175 @@
   color: #F6F1E4;
 }
 
+.product-card-action,
+.category-button,
+.shop-controls input {
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease;
+}
+
+.category-button:disabled,
+.shop-controls input:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.product-image-fallback {
+  max-width: 12ch;
+  color: rgba(46, 42, 34, 0.56);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.product-card-image {
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.product-card-image.is-loaded {
+  opacity: 1;
+}
+
+.product-card-skeleton {
+  pointer-events: none;
+}
+
+.product-skeleton-photo,
+.product-skeleton-line,
+.product-skeleton-pill,
+.product-skeleton-price,
+.product-skeleton-action {
+  background: linear-gradient(
+    100deg,
+    rgba(217, 223, 201, 0.62) 20%,
+    rgba(255, 253, 248, 0.92) 42%,
+    rgba(217, 223, 201, 0.62) 62%
+  );
+  background-size: 200% 100%;
+  animation: product-skeleton-shimmer 1.8s ease-in-out infinite;
+}
+
+.product-skeleton-photo {
+  background-color: #D9DFC9;
+}
+
+.product-skeleton-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.68rem;
+}
+
+.product-skeleton-line,
+.product-skeleton-pill,
+.product-skeleton-price,
+.product-skeleton-action {
+  display: block;
+  height: 0.72rem;
+  border-radius: 999px;
+}
+
+.product-skeleton-brand {
+  width: 34%;
+}
+
+.product-skeleton-title {
+  width: 78%;
+  height: 1.15rem;
+}
+
+.product-skeleton-meta {
+  width: 59%;
+}
+
+.product-skeleton-pill {
+  width: 42%;
+  height: 1.7rem;
+  margin-top: 0.15rem;
+}
+
+.product-skeleton-footer {
+  min-height: 46px;
+  margin-top: 0.12rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.product-skeleton-price {
+  width: 28%;
+  height: 1rem;
+}
+
+.product-skeleton-action {
+  width: 41%;
+  height: 46px;
+}
+
+@keyframes product-skeleton-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.catalog-error {
+  min-height: 220px;
+  padding: clamp(1.35rem, 4vw, 2rem);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  border: 1px solid rgba(181, 80, 44, 0.28);
+  border-radius: 14px;
+  background: rgba(255, 253, 248, 0.72);
+  box-shadow: 0 9px 24px rgba(46, 42, 34, 0.055);
+}
+
+.catalog-error h3 {
+  margin: 0 0 0.45rem;
+  color: #3E5B3E;
+  font-family: 'Zilla Slab', serif;
+  font-size: clamp(1.35rem, 3vw, 1.7rem);
+}
+
+.catalog-error p {
+  max-width: 48ch;
+  margin: 0;
+  color: #5F5C52;
+  line-height: 1.55;
+}
+
+.catalog-retry-button {
+  min-height: 46px;
+  flex: 0 0 auto;
+  padding: 0.7rem 1rem;
+  border: 2px solid #3E5B3E;
+  border-radius: 8px;
+  background: #3E5B3E;
+  color: #FFFDF8;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+
+.catalog-retry-button:hover {
+  transform: translateY(-1px);
+  background: transparent;
+  color: #3E5B3E;
+}
+
+.catalog-retry-button:focus-visible {
+  outline: 3px solid rgba(181, 80, 44, 0.7);
+  outline-offset: 3px;
+}
+
 .product-card-link,
 .product-name-link {
   color: inherit;
@@ -2745,6 +2914,58 @@
 @media (prefers-reduced-motion: reduce) {
   .back-to-top {
     transition: none;
+  }
+}
+
+/* STOREFRONT CATALOG POLISH */
+
+.product-card-image {
+  opacity: 0;
+  transition: transform 240ms ease, opacity 220ms ease;
+}
+
+.product-card-image.is-loaded {
+  opacity: 1;
+}
+
+@media (max-width: 650px) {
+  .catalog-error {
+    min-height: 0;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .catalog-retry-button {
+    width: 100%;
+  }
+
+  .product-skeleton-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .product-skeleton-action {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-card-image,
+  .product-card-action,
+  .category-button,
+  .shop-controls input,
+  .catalog-retry-button {
+    transition: none;
+  }
+
+  .product-skeleton-photo,
+  .product-skeleton-line,
+  .product-skeleton-pill,
+  .product-skeleton-price,
+  .product-skeleton-action {
+    animation: none;
+    background: rgba(217, 223, 201, 0.72);
   }
 }
 
