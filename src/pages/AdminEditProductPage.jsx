@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import {
+  DEFAULT_PRODUCT_CATEGORY,
+  PRODUCT_CATEGORIES,
+} from '../lib/productCategories'
+import { inventoryStateIsValid } from '../lib/inventory'
+import {
+  getProductImageUrl,
+  getUniqueImageFiles,
+} from '../lib/productImages'
 import './AdminEditProductPage.css'
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024
@@ -23,7 +32,7 @@ function AdminEditProductPage() {
   const [formData, setFormData] = useState({
     name: '',
     brand: '',
-    category: 'Bags & Wallets',
+    category: DEFAULT_PRODUCT_CATEGORY,
     condition: 'New, unused',
     stock: 0,
     price: '',
@@ -102,7 +111,7 @@ function AdminEditProductPage() {
         name: loadedProduct.name ?? '',
         brand: loadedProduct.brand ?? '',
         category:
-          loadedProduct.category ?? 'Bags & Wallets',
+          loadedProduct.category ?? DEFAULT_PRODUCT_CATEGORY,
         condition:
           loadedProduct.condition ?? 'New, unused',
         stock: loadedProduct.stock ?? 0,
@@ -147,19 +156,6 @@ function AdminEditProductPage() {
     loadPage()
   }, [id])
 
-  function getPublicImageUrl(imagePath) {
-    if (!imagePath) {
-      return null
-    }
-
-    const { data } = supabase
-      .storage
-      .from('product-images')
-      .getPublicUrl(imagePath)
-
-    return data.publicUrl
-  }
-
   function getFileExtension(file) {
     if (file.type === 'image/jpeg') {
       return 'jpg'
@@ -190,23 +186,6 @@ function AdminEditProductPage() {
     }
 
     return null
-  }
-
-  function inventoryStateIsValid(status, stock) {
-    const numericStock = Number(stock)
-
-    if (status === 'available') {
-      return numericStock > 0
-    }
-
-    if (
-      status === 'reserved' ||
-      status === 'sold'
-    ) {
-      return numericStock === 0
-    }
-
-    return false
   }
 
   function handleFieldChange(event) {
@@ -698,7 +677,12 @@ function AdminEditProductPage() {
     setMessage('')
     setErrorMessage('')
 
-    const nextFiles = Array.from(files ?? [])
+    const selectedFiles = Array.from(files ?? [])
+    const nextFiles = getUniqueImageFiles(selectedFiles)
+
+    if (nextFiles.length < selectedFiles.length) {
+      setMessage('Duplicate files were removed from the selection.')
+    }
 
     if (nextFiles.length === 0) {
       setSelectedGalleryFiles([])
@@ -1115,7 +1099,7 @@ function AdminEditProductPage() {
   }
 
   const mainImageUrl =
-    getPublicImageUrl(
+    getProductImageUrl(
       product.image_path
     )
 
@@ -1324,7 +1308,7 @@ function AdminEditProductPage() {
             {galleryImages.map(
               (galleryImage, index) => {
                 const galleryUrl =
-                  getPublicImageUrl(
+                  getProductImageUrl(
                     galleryImage.image_path
                   )
 
@@ -1531,25 +1515,11 @@ function AdminEditProductPage() {
                   handleFieldChange
                 }
               >
-                <option value="Bags & Wallets">
-                  Bags & Wallets
-                </option>
-
-                <option value="Clothing">
-                  Clothing
-                </option>
-
-                <option value="Accessories">
-                  Accessories
-                </option>
-
-                <option value="Intimates">
-                  Intimates
-                </option>
-
-                <option value="Kitchen & Home">
-                  Kitchen & Home
-                </option>
+                {PRODUCT_CATEGORIES.map((category) => (
+                  <option value={category} key={category}>
+                    {category}
+                  </option>
+                ))}
               </select>
             </label>
 

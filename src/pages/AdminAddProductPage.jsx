@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import {
+  DEFAULT_PRODUCT_CATEGORY,
+  PRODUCT_CATEGORIES,
+} from '../lib/productCategories'
+import { inventoryStateIsValid } from '../lib/inventory'
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024
 
@@ -17,7 +22,7 @@ function AdminAddProductPage() {
   const [formData, setFormData] = useState({
     name: '',
     brand: '',
-    category: 'Bags & Wallets',
+    category: DEFAULT_PRODUCT_CATEGORY,
     condition: 'New, unused',
     stock: 1,
     price: '',
@@ -99,26 +104,6 @@ function AdminAddProductPage() {
     return `${baseSlug}-${number}`
   }
 
-  function inventoryStateIsValid(
-    status,
-    stock
-  ) {
-    const numericStock = Number(stock)
-
-    if (status === 'available') {
-      return numericStock > 0
-    }
-
-    if (
-      status === 'reserved' ||
-      status === 'sold'
-    ) {
-      return numericStock === 0
-    }
-
-    return false
-  }
-
   function handleFieldChange(event) {
     const {
       name,
@@ -190,7 +175,7 @@ function AdminAddProductPage() {
     setFormData({
       name: '',
       brand: '',
-      category: 'Bags & Wallets',
+      category: DEFAULT_PRODUCT_CATEGORY,
       condition: 'New, unused',
       stock: 1,
       price: '',
@@ -650,25 +635,11 @@ function AdminAddProductPage() {
               value={formData.category}
               onChange={handleFieldChange}
             >
-              <option value="Bags & Wallets">
-                Bags & Wallets
-              </option>
-
-              <option value="Clothing">
-                Clothing
-              </option>
-
-              <option value="Accessories">
-                Accessories
-              </option>
-
-              <option value="Intimates">
-                Intimates
-              </option>
-
-              <option value="Kitchen & Home">
-                Kitchen & Home
-              </option>
+              {PRODUCT_CATEGORIES.map((category) => (
+                <option value={category} key={category}>
+                  {category}
+                </option>
+              ))}
             </select>
             </label>
           </div>

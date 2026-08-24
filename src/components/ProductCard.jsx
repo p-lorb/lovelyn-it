@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { getProductImageUrl } from '../lib/productImages'
 
 export function ProductCardSkeleton() {
   return (
@@ -32,16 +32,7 @@ function ProductCard({ product, onOpenProduct }) {
   const [imageLoaded, setImageLoaded] = useState(false)
   const [imageUnavailable, setImageUnavailable] = useState(false)
 
-  let imageUrl = null
-
-  if (product.image_path) {
-    const { data } = supabase
-      .storage
-      .from('product-images')
-      .getPublicUrl(product.image_path)
-
-    imageUrl = data.publicUrl
-  }
+  const imageUrl = getProductImageUrl(product.image_path)
 
   return (
     <div

@@ -18,6 +18,12 @@ import AdminEditProductPage from './pages/AdminEditProductPage'
 import AdminAddProductPage from './pages/AdminAddProductPage'
 import NotFoundPage from './pages/NotFoundPage'
 import { supabase } from './lib/supabase'
+import {
+  PRODUCT_CATEGORIES,
+} from './lib/productCategories'
+import {
+  getProductImageUrl,
+} from './lib/productImages'
 
 const CATALOG_SCROLL_POSITION_KEY =
   'lovelyn-it:catalog-scroll-position'
@@ -34,14 +40,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
 
-  const categories = [
-    'All',
-    'Bags & Wallets',
-    'Clothing',
-    'Accessories',
-    'Intimates',
-    'Kitchen & Home',
-  ]
+  const categories = ['All', ...PRODUCT_CATEGORIES]
 
   const loadProducts = useCallback(async () => {
     setLoading(true)
@@ -206,15 +205,6 @@ function App() {
       featuredProductIds.add(product.id)
     }
   })
-
-  function getProductImageUrl(imagePath) {
-    const { data } = supabase
-      .storage
-      .from('product-images')
-      .getPublicUrl(imagePath)
-
-    return data.publicUrl
-  }
 
   const homePage = (
     <>

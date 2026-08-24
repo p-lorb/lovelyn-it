@@ -2,79 +2,14 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { getProductDescription } from '../lib/productDescriptions'
+import {
+  getProductImageUrl,
+  removeDuplicateImagePaths,
+} from '../lib/productImages'
 import './ProductPage.css'
 
 const CATALOG_SCROLL_RESTORE_KEY =
   'lovelyn-it:restore-catalog-scroll'
-
-function getPublicImageUrl(imagePath) {
-  if (!imagePath) {
-    return null
-  }
-
-  const { data } = supabase
-    .storage
-    .from('product-images')
-    .getPublicUrl(imagePath)
-
-  return data.publicUrl
-}
-
-async function getImageBytes(imagePath) {
-  const response = await fetch(getPublicImageUrl(imagePath))
-
-  if (!response.ok) {
-    throw new Error(`Could not compare image: ${response.status}`)
-  }
-
-  return new Uint8Array(await response.arrayBuffer())
-}
-
-function imageBytesMatch(firstImage, secondImage) {
-  if (firstImage.length !== secondImage.length) {
-    return false
-  }
-
-  return firstImage.every(
-    (value, index) => value === secondImage[index]
-  )
-}
-
-async function removeExactGalleryDuplicates(
-  coverImagePath,
-  galleryItems
-) {
-  if (!coverImagePath || galleryItems.length === 0) {
-    return galleryItems
-  }
-
-  const coverBytes = await getImageBytes(coverImagePath)
-  const uniqueGalleryItems = []
-  const uniqueGalleryBytes = []
-
-  for (const galleryItem of galleryItems) {
-    const galleryBytes = await getImageBytes(
-      galleryItem.image_path
-    )
-
-    const matchesCover = imageBytesMatch(
-      coverBytes,
-      galleryBytes
-    )
-
-    const matchesAnotherGalleryImage =
-      uniqueGalleryBytes.some((existingBytes) =>
-        imageBytesMatch(existingBytes, galleryBytes)
-      )
-
-    if (!matchesCover && !matchesAnotherGalleryImage) {
-      uniqueGalleryItems.push(galleryItem)
-      uniqueGalleryBytes.push(galleryBytes)
-    }
-  }
-
-  return uniqueGalleryItems
-}
 
 function ProductPage() {
   const { slug } = useParams()
@@ -152,22 +87,12 @@ function ProductPage() {
           galleryError
         )
       } else {
-        try {
-          const uniqueGalleryImages =
-            await removeExactGalleryDuplicates(
-              productData.image_path,
-              galleryData ?? []
-            )
-
-          setGalleryImages(uniqueGalleryImages)
-        } catch (duplicateCheckError) {
-          console.error(
-            'Gallery duplicate check error:',
-            duplicateCheckError
+        setGalleryImages(
+          removeDuplicateImagePaths(
+            productData.image_path,
+            galleryData ?? []
           )
-
-          setGalleryImages(galleryData ?? [])
-        }
+        )
       }
     }
 
@@ -285,7 +210,7 @@ function ProductPage() {
 
   const selectedImageUrl =
     selectedImage
-      ? getPublicImageUrl(
+      ? getProductImageUrl(
           selectedImage.image_path
         )
       : null
@@ -427,6 +352,8 @@ function ProductPage() {
                     selectedImageIndex + 1
                   }`}
                   className="product-detail-photo"
+                  decoding="async"
+                  fetchPriority="high"
                 />
               ) : (
                 <span>
@@ -489,7 +416,7 @@ function ProductPage() {
                 {productImages.map(
                   (image, index) => {
                     const imageUrl =
-                      getPublicImageUrl(
+                      getProductImageUrl(
                         image.image_path
                       )
 
@@ -517,6 +444,10 @@ function ProductPage() {
                         <img
                           src={imageUrl}
                           alt=""
+                          loading="lazy"
+                          decoding="async"
+                          width="76"
+                          height="76"
                         />
 
                         {index === 0 &&

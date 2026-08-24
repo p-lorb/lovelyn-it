@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { PRODUCT_CATEGORIES } from '../lib/productCategories'
+import { inventoryStateIsValid } from '../lib/inventory'
+import { getProductImageUrl } from '../lib/productImages'
 
 function AdminPage() {
   const [session, setSession] = useState(null)
@@ -88,36 +91,6 @@ function AdminPage() {
 
     loadProducts()
   }, [session])
-
-  function getImageUrl(imagePath) {
-    if (!imagePath) {
-      return null
-    }
-
-    const { data } = supabase
-      .storage
-      .from('product-images')
-      .getPublicUrl(imagePath)
-
-    return data.publicUrl
-  }
-
-  function inventoryStateIsValid(status, stock) {
-    const numericStock = Number(stock)
-
-    if (status === 'available') {
-      return numericStock > 0
-    }
-
-    if (
-      status === 'reserved' ||
-      status === 'sold'
-    ) {
-      return numericStock === 0
-    }
-
-    return false
-  }
 
   async function handleLogin(event) {
     event.preventDefault()
@@ -796,25 +769,11 @@ function AdminPage() {
                 All categories
               </option>
 
-              <option value="Bags & Wallets">
-                Bags & Wallets
-              </option>
-
-              <option value="Clothing">
-                Clothing
-              </option>
-
-              <option value="Accessories">
-                Accessories
-              </option>
-
-              <option value="Intimates">
-                Intimates
-              </option>
-
-              <option value="Kitchen & Home">
-                Kitchen & Home
-              </option>
+              {PRODUCT_CATEGORIES.map((category) => (
+                <option value={category} key={category}>
+                  {category}
+                </option>
+              ))}
             </select>
           </label>
 
@@ -911,7 +870,7 @@ function AdminPage() {
           filteredProducts.length > 0 && (
             <div className="admin-product-list">
               {filteredProducts.map((product) => {
-                const imageUrl = getImageUrl(
+                const imageUrl = getProductImageUrl(
                   product.image_path
                 )
 
