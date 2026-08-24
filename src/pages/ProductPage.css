@@ -366,6 +366,40 @@
   color: #5F5C52;
 }
 
+.product-page-error p {
+  max-width: 48ch;
+  color: #5F5C52;
+  line-height: 1.6;
+}
+
+.product-page-state-actions {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem 1.1rem;
+}
+
+.product-page-retry {
+  min-height: 44px;
+  padding: 0.72rem 1rem;
+  border: 1px solid #3E5B3E;
+  border-radius: 6px;
+  background: #3E5B3E;
+  color: #FFFDF8;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.product-page-retry:hover {
+  background: #2F4B31;
+}
+
+.product-page-retry:focus-visible {
+  outline: 3px solid rgba(62, 91, 62, 0.25);
+  outline-offset: 3px;
+}
+
 @media (max-width: 700px) {
   .product-gallery-arrow {
     width: 42px;

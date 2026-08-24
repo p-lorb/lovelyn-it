@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { PRODUCT_CATEGORIES } from '../lib/productCategories'
@@ -16,6 +16,7 @@ function AdminPage() {
 
   const [products, setProducts] = useState([])
   const [productsLoading, setProductsLoading] = useState(false)
+  const [productsError, setProductsError] = useState(false)
 
   const [updatingProductId, setUpdatingProductId] = useState(null)
   const [stockDrafts, setStockDrafts] = useState({})
@@ -55,42 +56,50 @@ function AdminPage() {
     }
   }, [])
 
-  useEffect(() => {
-    if (!session) {
+  const loadProducts = useCallback(async () => {
+    setProductsLoading(true)
+    setProductsError(false)
+
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('id', { ascending: true })
+
+    if (error) {
+      console.error('Admin products error:', error)
+      setProductsError(true)
+      setProductsLoading(false)
       return
     }
 
-    async function loadProducts() {
-      setProductsLoading(true)
+    const loadedProducts = data ?? []
+    const initialStockDrafts = {}
+    const initialPriceDrafts = {}
 
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('id', { ascending: true })
+    loadedProducts.forEach((product) => {
+      initialStockDrafts[product.id] = product.stock
+      initialPriceDrafts[product.id] = product.price ?? ''
+    })
 
-      if (error) {
-        console.error('Admin products error:', error)
-        setProductsLoading(false)
-        return
-      }
+    setProducts(loadedProducts)
+    setStockDrafts(initialStockDrafts)
+    setPriceDrafts(initialPriceDrafts)
+    setProductsLoading(false)
+  }, [])
 
-      setProducts(data)
-
-      const initialStockDrafts = {}
-      const initialPriceDrafts = {}
-
-      data.forEach((product) => {
-        initialStockDrafts[product.id] = product.stock
-        initialPriceDrafts[product.id] = product.price ?? ''
-      })
-
-      setStockDrafts(initialStockDrafts)
-      setPriceDrafts(initialPriceDrafts)
-      setProductsLoading(false)
+  useEffect(() => {
+    if (!session) {
+      return undefined
     }
 
-    loadProducts()
-  }, [session])
+    const requestTimer = window.setTimeout(() => {
+      loadProducts()
+    }, 0)
+
+    return () => {
+      window.clearTimeout(requestTimer)
+    }
+  }, [loadProducts, session])
 
   async function handleLogin(event) {
     event.preventDefault()
@@ -590,6 +599,7 @@ function AdminPage() {
 
               <input
                 type="email"
+                autoComplete="username"
                 value={email}
                 onChange={(event) =>
                   setEmail(event.target.value)
@@ -603,6 +613,7 @@ function AdminPage() {
 
               <input
                 type="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(event) =>
                   setPassword(event.target.value)
@@ -612,7 +623,7 @@ function AdminPage() {
             </label>
 
             {errorMessage && (
-              <p className="admin-error">
+              <p className="admin-error" role="alert">
                 {errorMessage}
               </p>
             )}
@@ -713,7 +724,7 @@ function AdminPage() {
       </section>
 
       {adminMessage && (
-        <p className="admin-message">
+        <p className="admin-message" role="status">
           {adminMessage}
         </p>
       )}
@@ -844,7 +855,27 @@ function AdminPage() {
           </span>
         </div>
 
+        {productsError && (
+          <div className="admin-empty-results" role="alert">
+            <strong>
+              We couldn’t load the inventory just now.
+            </strong>
+
+            <span>
+              Please check your connection and try again.
+            </span>
+
+            <button
+              type="button"
+              onClick={loadProducts}
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
         {!productsLoading &&
+          !productsError &&
           filteredProducts.length === 0 && (
             <div className="admin-empty-results">
               <strong>
@@ -867,6 +898,7 @@ function AdminPage() {
           )}
 
         {!productsLoading &&
+          !productsError &&
           filteredProducts.length > 0 && (
             <div className="admin-product-list">
               {filteredProducts.map((product) => {

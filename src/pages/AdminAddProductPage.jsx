@@ -256,7 +256,7 @@ function AdminAddProductPage() {
       .storage
       .from('product-images')
       .upload(imagePath, file, {
-        cacheControl: '3600',
+        cacheControl: '31536000',
         contentType: file.type,
         upsert: false,
       })
@@ -575,7 +575,7 @@ function AdminAddProductPage() {
       </div>
 
       {errorMessage && (
-        <div className="admin-edit-error">
+        <div className="admin-edit-error" role="alert">
           {errorMessage}
         </div>
       )}

@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react'
 import {
   Link,
   Routes,
@@ -12,11 +18,6 @@ import ProductCard, {
   ProductCardSkeleton,
 } from './components/ProductCard'
 import StoreInfoSections from './components/StoreInfoSections'
-import ProductPage from './pages/ProductPage'
-import AdminPage from './pages/AdminPage'
-import AdminEditProductPage from './pages/AdminEditProductPage'
-import AdminAddProductPage from './pages/AdminAddProductPage'
-import NotFoundPage from './pages/NotFoundPage'
 import { supabase } from './lib/supabase'
 import {
   PRODUCT_CATEGORIES,
@@ -29,6 +30,26 @@ const CATALOG_SCROLL_POSITION_KEY =
   'lovelyn-it:catalog-scroll-position'
 const CATALOG_SCROLL_RESTORE_KEY =
   'lovelyn-it:restore-catalog-scroll'
+
+const ProductPage = lazy(() => import('./pages/ProductPage'))
+const AdminPage = lazy(() => import('./pages/AdminPage'))
+const AdminEditProductPage = lazy(() =>
+  import('./pages/AdminEditProductPage')
+)
+const AdminAddProductPage = lazy(() =>
+  import('./pages/AdminAddProductPage')
+)
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
+
+function RouteLoadingState() {
+  return (
+    <main className="product-page-state">
+      <p>
+        Loading page...
+      </p>
+    </main>
+  )
+}
 
 function App() {
   const location = useLocation()
@@ -505,27 +526,47 @@ function App() {
 
       <Route
         path="/products/:slug"
-        element={<ProductPage />}
+        element={
+          <Suspense fallback={<RouteLoadingState />}>
+            <ProductPage />
+          </Suspense>
+        }
       />
 
       <Route
         path="/admin"
-        element={<AdminPage />}
+        element={
+          <Suspense fallback={<RouteLoadingState />}>
+            <AdminPage />
+          </Suspense>
+        }
       />
 
       <Route
         path="/admin/products/new"
-        element={<AdminAddProductPage />}
+        element={
+          <Suspense fallback={<RouteLoadingState />}>
+            <AdminAddProductPage />
+          </Suspense>
+        }
       />
 
       <Route
         path="/admin/products/:id/edit"
-        element={<AdminEditProductPage />}
+        element={
+          <Suspense fallback={<RouteLoadingState />}>
+            <AdminEditProductPage />
+          </Suspense>
+        }
       />
 
       <Route
         path="*"
-        element={<NotFoundPage />}
+        element={
+          <Suspense fallback={<RouteLoadingState />}>
+            <NotFoundPage />
+          </Suspense>
+        }
       />
     </Routes>
   )

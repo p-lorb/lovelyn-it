@@ -21,6 +21,8 @@ function ProductPage() {
   const [shareStatus, setShareStatus] = useState('idle')
 
   const [loading, setLoading] = useState(true)
+  const [productError, setProductError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
 
   const messengerUsername =
     import.meta.env.VITE_MESSENGER_USERNAME
@@ -32,6 +34,7 @@ function ProductPage() {
   useEffect(() => {
     async function loadProduct() {
       setLoading(true)
+      setProductError(false)
       setGalleryImages([])
       setSelectedImageIndex(0)
       setCopyStatus('idle')
@@ -54,6 +57,7 @@ function ProductPage() {
         )
 
         setProduct(null)
+        setProductError(true)
         setLoading(false)
         return
       }
@@ -97,7 +101,7 @@ function ProductPage() {
     }
 
     loadProduct()
-  }, [slug])
+  }, [reloadKey, slug])
 
   useEffect(() => {
     function requestRestoreOnBrowserBack() {
@@ -133,6 +137,38 @@ function ProductPage() {
         <p>
           Loading product...
         </p>
+      </main>
+    )
+  }
+
+  if (!product && productError) {
+    return (
+      <main className="product-page-state product-page-error" role="alert">
+        <h1>
+          We couldn’t load this product just now.
+        </h1>
+
+        <p>
+          Please check your connection and try again.
+        </p>
+
+        <div className="product-page-state-actions">
+          <button
+            type="button"
+            className="product-page-retry"
+            onClick={() => setReloadKey((current) => current + 1)}
+          >
+            Try again
+          </button>
+
+          <Link
+            to="/"
+            className="back-link"
+            onClick={requestCatalogRestore}
+          >
+            ← Back to shop
+          </Link>
+        </div>
       </main>
     )
   }
@@ -412,6 +448,7 @@ function ProductPage() {
               <div
                 className="product-gallery-thumbnails"
                 aria-label="Product photos"
+                role="group"
               >
                 {productImages.map(
                   (image, index) => {

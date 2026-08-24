@@ -452,7 +452,7 @@ function AdminEditProductPage() {
           newImagePath,
           selectedImage,
           {
-            cacheControl: '3600',
+            cacheControl: '31536000',
             contentType:
               selectedImage.type,
             upsert: false,
@@ -808,7 +808,7 @@ function AdminEditProductPage() {
             imagePath,
             file,
             {
-              cacheControl: '3600',
+              cacheControl: '31536000',
               contentType:
                 file.type,
               upsert: false,
@@ -1147,13 +1147,13 @@ function AdminEditProductPage() {
       </div>
 
       {message && (
-        <div className="admin-edit-message">
+        <div className="admin-edit-message" role="status">
           {message}
         </div>
       )}
 
       {errorMessage && (
-        <div className="admin-edit-error">
+        <div className="admin-edit-error" role="alert">
           {errorMessage}
         </div>
       )}
