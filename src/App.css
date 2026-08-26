@@ -2305,6 +2305,12 @@
 
 /* STOREFRONT EXPERIENCE */
 
+#shop,
+#how-it-works,
+#contact {
+  scroll-margin-top: 7rem;
+}
+
 .site-header {
   position: sticky;
   top: 0;
