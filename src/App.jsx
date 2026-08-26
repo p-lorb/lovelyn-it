@@ -62,6 +62,31 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState('All')
 
   const categories = ['All', ...PRODUCT_CATEGORIES]
+  const visibleCategories = [
+    'All',
+    ...PRODUCT_CATEGORIES.filter((category) =>
+      products.some((product) => product.category === category)
+    ),
+  ]
+  const selectedCategoryIsVisible =
+    visibleCategories.includes(selectedCategory)
+  const activeCategory = selectedCategoryIsVisible
+    ? selectedCategory
+    : 'All'
+
+  useEffect(() => {
+    if (selectedCategoryIsVisible) {
+      return undefined
+    }
+
+    const resetTimer = window.setTimeout(() => {
+      setSelectedCategory('All')
+    }, 0)
+
+    return () => {
+      window.clearTimeout(resetTimer)
+    }
+  }, [selectedCategoryIsVisible])
 
   const loadProducts = useCallback(async () => {
     setLoading(true)
@@ -189,8 +214,8 @@ function App() {
       product.category?.toLowerCase().includes(query)
 
     const matchesCategory =
-      selectedCategory === 'All' ||
-      product.category === selectedCategory
+      activeCategory === 'All' ||
+      product.category === activeCategory
 
     return matchesSearch && matchesCategory
   })
@@ -430,16 +455,16 @@ function App() {
               role="group"
               aria-label="Filter products by category"
             >
-              {categories.map((category) => (
+              {visibleCategories.map((category) => (
                 <button
                   type="button"
                   key={category}
                   className={`category-button ${
-                    selectedCategory === category
+                    activeCategory === category
                       ? 'active'
                       : ''
                   }`}
-                  aria-pressed={selectedCategory === category}
+                  aria-pressed={activeCategory === category}
                   onClick={() =>
                     setSelectedCategory(category)
                   }
