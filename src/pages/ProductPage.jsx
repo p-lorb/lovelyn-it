@@ -6,6 +6,10 @@ import {
   getProductImageUrl,
   removeDuplicateImagePaths,
 } from '../lib/productImages'
+import { withCategoryName } from '../lib/categories'
+import {
+  getEffectiveInventoryStatus,
+} from '../lib/inventory'
 import './ProductPage.css'
 
 const CATALOG_SCROLL_RESTORE_KEY =
@@ -16,6 +20,9 @@ function ProductPage() {
 
   const [product, setProduct] = useState(null)
   const [galleryImages, setGalleryImages] = useState([])
+  const [variants, setVariants] = useState([])
+  const [selectedVariantId, setSelectedVariantId] = useState('')
+  const [variantsError, setVariantsError] = useState(false)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [copyStatus, setCopyStatus] = useState('idle')
   const [shareStatus, setShareStatus] = useState('idle')
@@ -36,6 +43,9 @@ function ProductPage() {
       setLoading(true)
       setProductError(false)
       setGalleryImages([])
+      setVariants([])
+      setSelectedVariantId('')
+      setVariantsError(false)
       setSelectedImageIndex(0)
       setCopyStatus('idle')
       setShareStatus('idle')
@@ -45,7 +55,9 @@ function ProductPage() {
         error: productError,
       } = await supabase
         .from('products')
-        .select('*')
+        .select(
+          '*, categories(id, name, sort_order, is_active)'
+        )
         .eq('slug', slug)
         .eq('published', true)
         .maybeSingle()
@@ -68,8 +80,30 @@ function ProductPage() {
         return
       }
 
-      setProduct(productData)
+      setProduct(withCategoryName(productData))
       setLoading(false)
+
+      if (productData.has_variants) {
+        const {
+          data: variantData,
+          error: variantError,
+        } = await supabase.rpc(
+          'get_public_product_variants',
+          {
+            p_product_id: productData.id,
+          }
+        )
+
+        if (variantError) {
+          console.error(
+            'Public variants error:',
+            variantError
+          )
+          setVariantsError(true)
+        } else {
+          setVariants(variantData ?? [])
+        }
+      }
 
       const {
         data: galleryData,
@@ -191,17 +225,19 @@ function ProductPage() {
     )
   }
 
-  const isAvailable =
-    product.status === 'available'
-
-  const isReserved =
-    product.status === 'reserved'
-
-  const isSold =
-    product.status === 'sold'
+  const effectiveStatus = getEffectiveInventoryStatus(product)
+  const isAvailable = effectiveStatus === 'available'
+  const isReserved = effectiveStatus === 'reserved'
+  const isSoldOut = effectiveStatus === 'sold_out'
+  const selectedVariant = variants.find(
+    (variant) => variant.id === selectedVariantId
+  )
+  const needsVariantSelection = Boolean(product.has_variants)
 
   const canMessage =
-    isAvailable && Boolean(messengerUrl)
+    isAvailable &&
+    Boolean(messengerUrl) &&
+    (!needsVariantSelection || Boolean(selectedVariant))
 
   const priceLabel =
     product.price !== null
@@ -211,6 +247,9 @@ function ProductPage() {
   const inquiryText =
     `Hi! I'm interested in ${product.name} (${priceLabel}) ` +
     `from Lovelyn It!. Is it still available?\n\n` +
+    (selectedVariant
+      ? `Size: ${selectedVariant.label}\n`
+      : '') +
     'Quantity: 1\n' +
     'General location: __________'
 
@@ -407,7 +446,7 @@ function ProductPage() {
                 >
                   {isReserved
                     ? 'Reserved'
-                    : 'Sold'}
+                    : 'Sold out'}
                 </span>
               )}
 
@@ -539,9 +578,9 @@ function ProductPage() {
                 </span>
               )}
 
-              {isSold && (
+              {isSoldOut && (
                 <span className="sold-text">
-                  Sold
+                  Sold out
                 </span>
               )}
             </div>
@@ -551,6 +590,54 @@ function ProductPage() {
                 ? `₱${product.price}`
                 : 'Price coming soon'}
             </div>
+
+            {product.has_variants && (
+              <section
+                className="product-variant-picker"
+                aria-labelledby="product-variant-title"
+              >
+                <h2 id="product-variant-title">
+                  Available sizes
+                </h2>
+
+                {variantsError ? (
+                  <p className="product-variant-error">
+                    Sizes could not load just now. Please try again shortly.
+                  </p>
+                ) : variants.length > 0 ? (
+                  <div
+                    className="product-variant-options"
+                    role="radiogroup"
+                    aria-label="Choose an available size"
+                  >
+                    {variants.map((variant) => (
+                      <button
+                        type="button"
+                        key={variant.id}
+                        className={`product-variant-option ${
+                          selectedVariantId === variant.id
+                            ? 'active'
+                            : ''
+                        }`}
+                        role="radio"
+                        aria-checked={
+                          selectedVariantId === variant.id
+                        }
+                        onClick={() =>
+                          setSelectedVariantId(variant.id)
+                        }
+                      >
+                        {variant.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="product-variant-empty">
+                    No size is currently available.
+                  </p>
+                )}
+              </section>
+            )}
 
             <div className="product-share">
               <button
@@ -610,7 +697,7 @@ function ProductPage() {
                 <h2 id="product-inquiry-title">
                   {isAvailable && 'Ready when you are'}
                   {isReserved && 'This item is currently reserved'}
-                  {isSold && 'This item has been sold'}
+                  {isSoldOut && 'This item is sold out'}
                 </h2>
 
                 {isAvailable && (
@@ -629,7 +716,7 @@ function ProductPage() {
                   </p>
                 )}
 
-                {isSold && (
+                {isSoldOut && (
                   <p>
                     This product is no longer available to order.
                   </p>
@@ -638,6 +725,12 @@ function ProductPage() {
 
               {isAvailable && (
                 <>
+                  {needsVariantSelection && !selectedVariant && (
+                    <p className="product-variant-selection-note">
+                      Choose an available size before messaging.
+                    </p>
+                  )}
+
                   <button
                     type="button"
                     className="product-message-button"

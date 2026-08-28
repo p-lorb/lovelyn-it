@@ -1,16 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import {
-  DEFAULT_PRODUCT_CATEGORY,
-  PRODUCT_CATEGORIES,
-} from '../lib/productCategories'
 import { inventoryStateIsValid } from '../lib/inventory'
+import { sortCategories, withCategoryName } from '../lib/categories'
 import {
   getProductImageUrl,
   getUniqueImageFiles,
 } from '../lib/productImages'
 import './AdminEditProductPage.css'
+import VariantManager from '../components/VariantManager'
+import RecordSaleDialog from '../components/RecordSaleDialog'
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024
 
@@ -32,7 +31,7 @@ function AdminEditProductPage() {
   const [formData, setFormData] = useState({
     name: '',
     brand: '',
-    category: DEFAULT_PRODUCT_CATEGORY,
+    category_id: '',
     condition: 'New, unused',
     stock: 0,
     price: '',
@@ -60,6 +59,8 @@ function AdminEditProductPage() {
   const [galleryInputKey, setGalleryInputKey] = useState(0)
   const [removingGalleryId, setRemovingGalleryId] = useState(null)
   const [isGalleryDragging, setIsGalleryDragging] = useState(false)
+  const [categories, setCategories] = useState([])
+  const [showSaleDialog, setShowSaleDialog] = useState(false)
 
   useEffect(() => {
     async function loadPage() {
@@ -79,7 +80,7 @@ function AdminEditProductPage() {
 
       const productResponse = await supabase
         .from('products')
-        .select('*')
+        .select('*, categories(id, name, sort_order, is_active)')
         .eq('id', id)
         .maybeSingle()
 
@@ -103,15 +104,14 @@ function AdminEditProductPage() {
         return
       }
 
-      const loadedProduct = productResponse.data
+      const loadedProduct = withCategoryName(productResponse.data)
 
       setProduct(loadedProduct)
 
       setFormData({
         name: loadedProduct.name ?? '',
         brand: loadedProduct.brand ?? '',
-        category:
-          loadedProduct.category ?? DEFAULT_PRODUCT_CATEGORY,
+        category_id: loadedProduct.category_id ?? '',
         condition:
           loadedProduct.condition ?? 'New, unused',
         stock: loadedProduct.stock ?? 0,
@@ -123,6 +123,17 @@ function AdminEditProductPage() {
         published:
           Boolean(loadedProduct.published),
       })
+
+      const categoriesResponse = await supabase
+        .from('categories')
+        .select('id, name, sort_order, is_active')
+
+      if (categoriesResponse.error) {
+        console.error('Edit product categories error:', categoriesResponse.error)
+        setErrorMessage('The product loaded, but categories could not be loaded.')
+      } else {
+        setCategories(sortCategories(categoriesResponse.data))
+      }
 
       const galleryResponse = await supabase
         .from('product_images')
@@ -196,24 +207,8 @@ function AdminEditProductPage() {
       checked,
     } = event.target
 
-    // STATUS RULES
     if (name === 'status') {
       setFormData((current) => {
-        // Reserved/Sold means there are
-        // no units currently available.
-        if (
-          value === 'reserved' ||
-          value === 'sold'
-        ) {
-          return {
-            ...current,
-            status: value,
-            stock: 0,
-          }
-        }
-
-        // Do NOT invent stock when choosing Available.
-        // The user must enter the real quantity.
         return {
           ...current,
           status: value,
@@ -223,31 +218,12 @@ function AdminEditProductPage() {
       return
     }
 
-    // STOCK RULES
     if (name === 'stock') {
       setFormData((current) => {
-        const nextForm = {
+        return {
           ...current,
           stock: value,
         }
-
-        const numericStock = Number(value)
-
-        // Restocking a Reserved/Sold product
-        // brings it back to Available.
-        if (
-          value !== '' &&
-          Number.isInteger(numericStock) &&
-          numericStock > 0 &&
-          (
-            current.status === 'reserved' ||
-            current.status === 'sold'
-          )
-        ) {
-          nextForm.status = 'available'
-        }
-
-        return nextForm
       })
 
       return
@@ -275,6 +251,15 @@ function AdminEditProductPage() {
       return
     }
 
+    const selectedCategory = categories.find(
+      (category) => category.id === formData.category_id
+    )
+
+    if (!selectedCategory) {
+      setErrorMessage('Choose a category before saving this product.')
+      return
+    }
+
     if (
       formData.stock === '' ||
       formData.stock === null
@@ -293,32 +278,6 @@ function AdminEditProductPage() {
     ) {
       setErrorMessage(
         'Stock must be a whole number of 0 or higher.'
-      )
-      return
-    }
-
-    // Available requires actual stock.
-    if (
-      formData.status === 'available' &&
-      stock === 0
-    ) {
-      setErrorMessage(
-        'An Available product must have at least 1 unit in stock. Add stock or choose Reserved/Sold.'
-      )
-      return
-    }
-
-    // Reserved and Sold represent no
-    // currently available units.
-    if (
-      (
-        formData.status === 'reserved' ||
-        formData.status === 'sold'
-      ) &&
-      stock !== 0
-    ) {
-      setErrorMessage(
-        'Reserved and Sold products must have 0 available stock.'
       )
       return
     }
@@ -354,20 +313,6 @@ function AdminEditProductPage() {
       }
     }
 
-    // Extra protection when publishing.
-    if (
-      formData.published &&
-      !inventoryStateIsValid(
-        formData.status,
-        stock
-      )
-    ) {
-      setErrorMessage(
-        'This product cannot be published until its stock and status are valid.'
-      )
-      return
-    }
-
     setSaving(true)
 
     const { data, error } = await supabase
@@ -376,7 +321,8 @@ function AdminEditProductPage() {
         name: formData.name.trim(),
         brand:
           formData.brand.trim() || null,
-        category: formData.category,
+        category_id: selectedCategory.id,
+        category: selectedCategory.name,
         condition:
           formData.condition.trim() ||
           'New, unused',
@@ -389,7 +335,7 @@ function AdminEditProductPage() {
         published: formData.published,
       })
       .eq('id', product.id)
-      .select('*')
+      .select('*, categories(id, name, sort_order, is_active)')
       .single()
 
     if (error) {
@@ -406,7 +352,7 @@ function AdminEditProductPage() {
       return
     }
 
-    setProduct(data)
+    setProduct(withCategoryName(data))
 
     setFormData((current) => ({
       ...current,
@@ -1509,15 +1455,17 @@ function AdminEditProductPage() {
               Category
 
               <select
-                name="category"
-                value={formData.category}
+                name="category_id"
+                value={formData.category_id}
                 onChange={
                   handleFieldChange
                 }
+                required
               >
-                {PRODUCT_CATEGORIES.map((category) => (
-                  <option value={category} key={category}>
-                    {category}
+                <option value="">Choose a category</option>
+                {categories.map((category) => (
+                  <option value={category.id} key={category.id}>
+                    {category.name}
                   </option>
                 ))}
               </select>
@@ -1550,7 +1498,12 @@ function AdminEditProductPage() {
                 onChange={
                   handleFieldChange
                 }
+                disabled={product.has_variants}
               />
+
+              {product.has_variants && (
+                <small>Calculated from active variants below.</small>
+              )}
             </label>
 
             <label className="admin-edit-field">
@@ -1593,9 +1546,6 @@ function AdminEditProductPage() {
                   Reserved
                 </option>
 
-                <option value="sold">
-                  Sold
-                </option>
               </select>
             </label>
 
@@ -1618,9 +1568,7 @@ function AdminEditProductPage() {
 
           {!currentInventoryValid && (
             <div className="admin-edit-error">
-              {formData.status === 'available'
-                ? 'Available products need at least 1 unit in stock.'
-                : 'Reserved and Sold products must have 0 available stock.'}
+              Enter a whole-number stock amount and a valid status.
             </div>
           )}
 
@@ -1662,6 +1610,15 @@ function AdminEditProductPage() {
 
           <button
             type="button"
+            className="admin-edit-save"
+            disabled={Number(product.stock) <= 0}
+            onClick={() => setShowSaleDialog(true)}
+          >
+            Record sale
+          </button>
+
+          <button
+            type="button"
             className="admin-edit-delete"
             onClick={
               handleDeleteProduct
@@ -1674,6 +1631,29 @@ function AdminEditProductPage() {
           </button>
         </div>
       </form>
+
+      <VariantManager
+        product={product}
+        onProductChange={(updatedProduct) => {
+          setProduct(updatedProduct)
+          setFormData((current) => ({
+            ...current,
+            stock: updatedProduct.stock ?? 0,
+            status: updatedProduct.status ?? current.status,
+          }))
+        }}
+      />
+
+      {showSaleDialog && (
+        <RecordSaleDialog
+          product={product}
+          onClose={() => setShowSaleDialog(false)}
+          onRecorded={() => {
+            setShowSaleDialog(false)
+            window.location.reload()
+          }}
+        />
+      )}
     </main>
   )
 }

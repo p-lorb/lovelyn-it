@@ -1,9 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { PRODUCT_CATEGORIES } from '../lib/productCategories'
-import { inventoryStateIsValid } from '../lib/inventory'
+import {
+  sortCategories,
+  withCategoryNames,
+} from '../lib/categories'
+import {
+  getEffectiveInventoryStatus,
+  inventoryCanBePublished,
+} from '../lib/inventory'
 import { getProductImageUrl } from '../lib/productImages'
+import CategoryManager from '../components/CategoryManager'
+import RecordSaleDialog from '../components/RecordSaleDialog'
 
 function AdminPage() {
   const [session, setSession] = useState(null)
@@ -17,6 +25,8 @@ function AdminPage() {
   const [products, setProducts] = useState([])
   const [productsLoading, setProductsLoading] = useState(false)
   const [productsError, setProductsError] = useState(false)
+  const [categories, setCategories] = useState([])
+  const [saleProduct, setSaleProduct] = useState(null)
 
   const [updatingProductId, setUpdatingProductId] = useState(null)
   const [stockDrafts, setStockDrafts] = useState({})
@@ -45,6 +55,7 @@ function AdminPage() {
 
         if (!newSession) {
           setProducts([])
+          setCategories([])
           setStockDrafts({})
           setPriceDrafts({})
         }
@@ -62,7 +73,7 @@ function AdminPage() {
 
     const { data, error } = await supabase
       .from('products')
-      .select('*')
+      .select('*, categories(id, name, sort_order, is_active)')
       .order('id', { ascending: true })
 
     if (error) {
@@ -72,7 +83,7 @@ function AdminPage() {
       return
     }
 
-    const loadedProducts = data ?? []
+    const loadedProducts = withCategoryNames(data)
     const initialStockDrafts = {}
     const initialPriceDrafts = {}
 
@@ -87,6 +98,19 @@ function AdminPage() {
     setProductsLoading(false)
   }, [])
 
+  const loadCategories = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('id, name, sort_order, is_active')
+
+    if (error) {
+      console.error('Admin categories error:', error)
+      return
+    }
+
+    setCategories(sortCategories(data))
+  }, [])
+
   useEffect(() => {
     if (!session) {
       return undefined
@@ -94,12 +118,13 @@ function AdminPage() {
 
     const requestTimer = window.setTimeout(() => {
       loadProducts()
+      loadCategories()
     }, 0)
 
     return () => {
       window.clearTimeout(requestTimer)
     }
-  }, [loadProducts, session])
+  }, [loadCategories, loadProducts, session])
 
   async function handleLogin(event) {
     event.preventDefault()
@@ -130,15 +155,9 @@ function AdminPage() {
 
     setAdminMessage('')
 
-    if (
-      newPublishedValue &&
-      !inventoryStateIsValid(
-        product.status,
-        product.stock
-      )
-    ) {
+    if (newPublishedValue && !inventoryCanBePublished(product)) {
       setAdminMessage(
-        `Cannot publish ${product.name}: Available products need stock, while Reserved or Sold products must have 0 stock.`
+        `Cannot publish ${product.name}: add stock or variant stock first.`
       )
       return
     }
@@ -186,32 +205,12 @@ function AdminPage() {
   async function handleStatusChange(product, newStatus) {
     setAdminMessage('')
 
-    if (
-      newStatus === 'available' &&
-      Number(product.stock) <= 0
-    ) {
-      setAdminMessage(
-        `${product.name} has 0 stock. Add stock first; saving new stock will automatically make it Available.`
-      )
-      return
-    }
-
-    let newStock = Number(product.stock)
-
-    if (
-      newStatus === 'reserved' ||
-      newStatus === 'sold'
-    ) {
-      newStock = 0
-    }
-
     setUpdatingProductId(product.id)
 
     const { error } = await supabase
       .from('products')
       .update({
         status: newStatus,
-        stock: newStock,
       })
       .eq('id', product.id)
 
@@ -232,24 +231,14 @@ function AdminPage() {
           ? {
               ...currentProduct,
               status: newStatus,
-              stock: newStock,
             }
           : currentProduct
       )
     )
 
-    setStockDrafts((currentDrafts) => ({
-      ...currentDrafts,
-      [product.id]: newStock,
-    }))
-
     if (newStatus === 'reserved') {
       setAdminMessage(
-        `${product.name} is now Reserved and its available stock was set to 0.`
-      )
-    } else if (newStatus === 'sold') {
-      setAdminMessage(
-        `${product.name} is now Sold and its available stock was set to 0.`
+        `${product.name} is now Reserved. Its stock is unchanged.`
       )
     } else {
       setAdminMessage(
@@ -321,24 +310,11 @@ function AdminPage() {
       return
     }
 
-    if (
-      parsedStock === 0 &&
-      product.status === 'available'
-    ) {
-      setAdminMessage(
-        `${product.name} cannot stay Available with 0 stock. Mark it Reserved or Sold instead.`
-      )
-      return
-    }
-
     let newStatus = product.status
 
     if (
       parsedStock > 0 &&
-      (
-        product.status === 'reserved' ||
-        product.status === 'sold'
-      )
+      product.status === 'sold'
     ) {
       newStatus = 'available'
     }
@@ -532,11 +508,11 @@ function AdminPage() {
 
     const matchesCategory =
       categoryFilter === 'all' ||
-      product.category === categoryFilter
+      product.category_id === categoryFilter
 
     const matchesStatus =
       statusFilter === 'all' ||
-      product.status === statusFilter
+      getEffectiveInventoryStatus(product) === statusFilter
 
     const matchesVisibility =
       visibilityFilter === 'all' ||
@@ -647,7 +623,8 @@ function AdminPage() {
   ).length
 
   const availableCount = products.filter(
-    (product) => product.status === 'available'
+    (product) =>
+      getEffectiveInventoryStatus(product) === 'available'
   ).length
 
   return (
@@ -668,6 +645,10 @@ function AdminPage() {
         </div>
 
         <div className="admin-header-actions">
+          <Link to="/admin/sales" className="admin-edit-button">
+            Sales
+          </Link>
+
           <Link
             to="/admin/products/new"
             className="admin-add-product-button"
@@ -780,9 +761,9 @@ function AdminPage() {
                 All categories
               </option>
 
-              {PRODUCT_CATEGORIES.map((category) => (
-                <option value={category} key={category}>
-                  {category}
+              {categories.map((category) => (
+                <option value={category.id} key={category.id}>
+                  {category.name}
                 </option>
               ))}
             </select>
@@ -809,8 +790,8 @@ function AdminPage() {
                 Reserved
               </option>
 
-              <option value="sold">
-                Sold
+              <option value="sold_out">
+                Sold out
               </option>
             </select>
           </label>
@@ -839,6 +820,13 @@ function AdminPage() {
           </label>
         </div>
       </section>
+
+      <CategoryManager
+        categories={categories}
+        onCategoriesChanged={(nextCategories) =>
+          setCategories(sortCategories(nextCategories))
+        }
+      />
 
       <section className="admin-products">
         <div className="admin-section-header">
@@ -906,11 +894,7 @@ function AdminPage() {
                   product.image_path
                 )
 
-                const inventoryValid =
-                  inventoryStateIsValid(
-                    product.status,
-                    product.stock
-                  )
+                const effectiveStatus = getEffectiveInventoryStatus(product)
 
                 return (
                   <div
@@ -951,9 +935,9 @@ function AdminPage() {
                             : 'No price yet'}
                         </span>
 
-                        {!inventoryValid && (
+                        {product.has_variants && (
                           <span className="admin-inventory-warning">
-                            Inventory needs attention
+                            Stock is managed by variants
                           </span>
                         )}
                       </div>
@@ -1004,6 +988,7 @@ function AdminPage() {
                           type="button"
                           className="admin-stock-step"
                           disabled={
+                            product.has_variants ||
                             updatingProductId === product.id ||
                             Number(
                               stockDrafts[product.id] ?? 0
@@ -1024,6 +1009,7 @@ function AdminPage() {
                             stockDrafts[product.id] ?? ''
                           }
                           disabled={
+                            product.has_variants ||
                             updatingProductId === product.id
                           }
                           onChange={(event) =>
@@ -1038,6 +1024,7 @@ function AdminPage() {
                           type="button"
                           className="admin-stock-step"
                           disabled={
+                            product.has_variants ||
                             updatingProductId === product.id
                           }
                           onClick={() =>
@@ -1051,6 +1038,7 @@ function AdminPage() {
                           type="button"
                           className="admin-stock-save"
                           disabled={
+                            product.has_variants ||
                             updatingProductId === product.id ||
                             !hasStockChanged(product)
                           }
@@ -1063,8 +1051,12 @@ function AdminPage() {
                       </div>
 
                       <select
-                        className={`admin-status-select ${product.status}`}
-                        value={product.status}
+                        className={`admin-status-select ${effectiveStatus}`}
+                        value={
+                          effectiveStatus === 'sold_out'
+                            ? 'sold_out'
+                            : product.status
+                        }
                         disabled={
                           updatingProductId === product.id
                         }
@@ -1083,8 +1075,8 @@ function AdminPage() {
                           Reserved
                         </option>
 
-                        <option value="sold">
-                          Sold
+                        <option value="sold_out" disabled>
+                          Sold out (0 stock)
                         </option>
                       </select>
 
@@ -1106,6 +1098,18 @@ function AdminPage() {
                       >
                         Edit
                       </Link>
+
+                      <button
+                        type="button"
+                        className="admin-price-save"
+                        disabled={
+                          updatingProductId === product.id ||
+                          effectiveStatus === 'sold_out'
+                        }
+                        onClick={() => setSaleProduct(product)}
+                      >
+                        Record sale
+                      </button>
 
                       <button
                         type="button"
@@ -1134,6 +1138,18 @@ function AdminPage() {
             </div>
           )}
       </section>
+
+      {saleProduct && (
+        <RecordSaleDialog
+          product={saleProduct}
+          onClose={() => setSaleProduct(null)}
+          onRecorded={() => {
+            setSaleProduct(null)
+            setAdminMessage('Sale recorded and stock updated.')
+            loadProducts()
+          }}
+        />
+      )}
     </main>
   )
 }

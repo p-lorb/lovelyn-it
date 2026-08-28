@@ -1,11 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import {
-  DEFAULT_PRODUCT_CATEGORY,
-  PRODUCT_CATEGORIES,
-} from '../lib/productCategories'
 import { inventoryStateIsValid } from '../lib/inventory'
+import { sortCategories } from '../lib/categories'
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024
 
@@ -22,7 +19,7 @@ function AdminAddProductPage() {
   const [formData, setFormData] = useState({
     name: '',
     brand: '',
-    category: DEFAULT_PRODUCT_CATEGORY,
+    category_id: '',
     condition: 'New, unused',
     stock: 1,
     price: '',
@@ -35,6 +32,7 @@ function AdminAddProductPage() {
   const [createdProduct, setCreatedProduct] = useState(null)
   const [selectedCoverImage, setSelectedCoverImage] = useState(null)
   const [coverPreviewUrl, setCoverPreviewUrl] = useState('')
+  const [categories, setCategories] = useState([])
 
   useEffect(() => {
     return () => {
@@ -56,6 +54,29 @@ function AdminAddProductPage() {
 
     checkSession()
   }, [])
+
+  useEffect(() => {
+    if (!session) {
+      return undefined
+    }
+
+    const requestTimer = window.setTimeout(async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id, name, sort_order, is_active')
+        .eq('is_active', true)
+
+      if (error) {
+        console.error('Add product categories error:', error)
+        setErrorMessage('Could not load categories. Please try again.')
+        return
+      }
+
+      setCategories(sortCategories(data))
+    }, 0)
+
+    return () => window.clearTimeout(requestTimer)
+  }, [session])
 
   function createSlug(name) {
     const slug = name
@@ -110,23 +131,8 @@ function AdminAddProductPage() {
       value,
     } = event.target
 
-    // Choosing Reserved or Sold means
-    // there are no units available.
     if (name === 'status') {
       setFormData((current) => {
-        if (
-          value === 'reserved' ||
-          value === 'sold'
-        ) {
-          return {
-            ...current,
-            status: value,
-            stock: 0,
-          }
-        }
-
-        // Do not automatically invent stock
-        // when choosing Available.
         return {
           ...current,
           status: value,
@@ -136,30 +142,12 @@ function AdminAddProductPage() {
       return
     }
 
-    // Adding real stock to a Reserved/Sold
-    // draft makes it Available.
     if (name === 'stock') {
       setFormData((current) => {
-        const nextForm = {
+        return {
           ...current,
           stock: value,
         }
-
-        const numericStock = Number(value)
-
-        if (
-          value !== '' &&
-          Number.isInteger(numericStock) &&
-          numericStock > 0 &&
-          (
-            current.status === 'reserved' ||
-            current.status === 'sold'
-          )
-        ) {
-          nextForm.status = 'available'
-        }
-
-        return nextForm
       })
 
       return
@@ -175,7 +163,7 @@ function AdminAddProductPage() {
     setFormData({
       name: '',
       brand: '',
-      category: DEFAULT_PRODUCT_CATEGORY,
+      category_id: '',
       condition: 'New, unused',
       stock: 1,
       price: '',
@@ -292,6 +280,15 @@ function AdminAddProductPage() {
       return
     }
 
+    const selectedCategory = categories.find(
+      (category) => category.id === formData.category_id
+    )
+
+    if (!selectedCategory) {
+      setErrorMessage('Choose a category before creating the product.')
+      return
+    }
+
     if (
       formData.stock === '' ||
       formData.stock === null ||
@@ -313,29 +310,6 @@ function AdminAddProductPage() {
     ) {
       setErrorMessage(
         'Stock must be a whole number of 0 or higher.'
-      )
-      return
-    }
-
-    if (
-      formData.status === 'available' &&
-      stock === 0
-    ) {
-      setErrorMessage(
-        'An Available product must have at least 1 unit in stock. Add stock or choose Reserved/Sold.'
-      )
-      return
-    }
-
-    if (
-      (
-        formData.status === 'reserved' ||
-        formData.status === 'sold'
-      ) &&
-      stock !== 0
-    ) {
-      setErrorMessage(
-        'Reserved and Sold products must have 0 available stock.'
       )
       return
     }
@@ -394,8 +368,8 @@ function AdminAddProductPage() {
             formData.brand.trim() ||
             null,
 
-          category:
-            formData.category,
+          category_id: selectedCategory.id,
+          category: selectedCategory.name,
 
           condition:
             formData.condition.trim() ||
@@ -631,13 +605,15 @@ function AdminAddProductPage() {
               Category
 
             <select
-              name="category"
-              value={formData.category}
+              name="category_id"
+              value={formData.category_id}
               onChange={handleFieldChange}
+              required
             >
-              {PRODUCT_CATEGORIES.map((category) => (
-                <option value={category} key={category}>
-                  {category}
+              <option value="">Choose a category</option>
+              {categories.map((category) => (
+                <option value={category.id} key={category.id}>
+                  {category.name}
                 </option>
               ))}
             </select>
@@ -723,9 +699,6 @@ function AdminAddProductPage() {
                 Reserved
               </option>
 
-              <option value="sold">
-                Sold
-              </option>
             </select>
             </label>
           </div>
@@ -813,10 +786,7 @@ function AdminAddProductPage() {
 
         {!inventoryValid && (
           <div className="admin-edit-error">
-            {formData.status ===
-            'available'
-              ? 'Available products need at least 1 unit in stock.'
-              : 'Reserved and Sold products must have 0 available stock.'}
+            Enter a whole-number stock amount and a valid status.
           </div>
         )}
 
@@ -831,7 +801,7 @@ function AdminAddProductPage() {
             </strong>
 
             <span>
-              Add photos and review the product before making it public.
+              Add photos, sizes if needed, and review the product before making it public.
             </span>
           </div>
         </div>

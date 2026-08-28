@@ -20,11 +20,13 @@ import ProductCard, {
 import StoreInfoSections from './components/StoreInfoSections'
 import { supabase } from './lib/supabase'
 import {
-  PRODUCT_CATEGORIES,
-} from './lib/productCategories'
-import {
   getProductImageUrl,
 } from './lib/productImages'
+import {
+  sortCategories,
+  withCategoryNames,
+} from './lib/categories'
+import { getEffectiveInventoryStatus } from './lib/inventory'
 
 const CATALOG_SCROLL_POSITION_KEY =
   'lovelyn-it:catalog-scroll-position'
@@ -39,6 +41,7 @@ const AdminEditProductPage = lazy(() =>
 const AdminAddProductPage = lazy(() =>
   import('./pages/AdminAddProductPage')
 )
+const AdminSalesPage = lazy(() => import('./pages/AdminSalesPage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 function RouteLoadingState() {
@@ -59,20 +62,31 @@ function App() {
   const [showBackToTop, setShowBackToTop] = useState(false)
 
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('All')
+  const [selectedCategory, setSelectedCategory] = useState('all')
 
-  const categories = ['All', ...PRODUCT_CATEGORIES]
+  const loadedCategories = sortCategories(
+    Array.from(
+      new Map(
+        products
+          .filter((product) => product.category_record?.is_active)
+          .map((product) => [
+            product.category_record.id,
+            product.category_record,
+          ])
+      ).values()
+    )
+  )
   const visibleCategories = [
-    'All',
-    ...PRODUCT_CATEGORIES.filter((category) =>
-      products.some((product) => product.category === category)
-    ),
+    { id: 'all', name: 'All' },
+    ...loadedCategories,
   ]
   const selectedCategoryIsVisible =
-    visibleCategories.includes(selectedCategory)
+    visibleCategories.some(
+      (category) => category.id === selectedCategory
+    )
   const activeCategory = selectedCategoryIsVisible
     ? selectedCategory
-    : 'All'
+    : 'all'
 
   useEffect(() => {
     if (selectedCategoryIsVisible) {
@@ -80,7 +94,7 @@ function App() {
     }
 
     const resetTimer = window.setTimeout(() => {
-      setSelectedCategory('All')
+      setSelectedCategory('all')
     }, 0)
 
     return () => {
@@ -94,7 +108,9 @@ function App() {
 
     const { data, error } = await supabase
       .from('products')
-      .select('*')
+      .select(
+        '*, categories(id, name, sort_order, is_active)'
+      )
       .eq('published', true)
       .order('id', { ascending: true })
 
@@ -105,7 +121,7 @@ function App() {
       return
     }
 
-    setProducts(data ?? [])
+    setProducts(withCategoryNames(data))
     setLoading(false)
   }, [])
 
@@ -214,8 +230,8 @@ function App() {
       product.category?.toLowerCase().includes(query)
 
     const matchesCategory =
-      activeCategory === 'All' ||
-      product.category === activeCategory
+      activeCategory === 'all' ||
+      product.category_id === activeCategory
 
     return matchesSearch && matchesCategory
   })
@@ -226,13 +242,13 @@ function App() {
   const productsWithPhotos = products.filter(
     (product) =>
       product.image_path &&
-      product.status !== 'sold'
+      getEffectiveInventoryStatus(product) !== 'sold_out'
   )
 
-  categories.slice(1).forEach((category) => {
+  loadedCategories.forEach((category) => {
     const featuredProduct = productsWithPhotos.find(
       (product) =>
-        product.category === category &&
+        product.category_id === category.id &&
         !featuredProductIds.has(product.id)
     )
 
@@ -458,19 +474,19 @@ function App() {
               {visibleCategories.map((category) => (
                 <button
                   type="button"
-                  key={category}
+                  key={category.id}
                   className={`category-button ${
-                    activeCategory === category
+                    activeCategory === category.id
                       ? 'active'
                       : ''
                   }`}
-                  aria-pressed={activeCategory === category}
+                  aria-pressed={activeCategory === category.id}
                   onClick={() =>
-                    setSelectedCategory(category)
+                    setSelectedCategory(category.id)
                   }
                   disabled={loading}
                 >
-                  {category}
+                  {category.name}
                 </button>
               ))}
             </div>
@@ -581,6 +597,15 @@ function App() {
         element={
           <Suspense fallback={<RouteLoadingState />}>
             <AdminEditProductPage />
+          </Suspense>
+        }
+      />
+
+      <Route
+        path="/admin/sales"
+        element={
+          <Suspense fallback={<RouteLoadingState />}>
+            <AdminSalesPage />
           </Suspense>
         }
       />

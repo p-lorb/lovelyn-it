@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getProductImageUrl } from '../lib/productImages'
+import { getEffectiveInventoryStatus } from '../lib/inventory'
 
 export function ProductCardSkeleton() {
   return (
@@ -26,9 +27,10 @@ export function ProductCardSkeleton() {
 }
 
 function ProductCard({ product, onOpenProduct }) {
-  const isAvailable = product.status === 'available'
-  const isReserved = product.status === 'reserved'
-  const isSold = product.status === 'sold'
+  const effectiveStatus = getEffectiveInventoryStatus(product)
+  const isAvailable = effectiveStatus === 'available'
+  const isReserved = effectiveStatus === 'reserved'
+  const isSoldOut = effectiveStatus === 'sold_out'
   const [imageLoaded, setImageLoaded] = useState(false)
   const [imageUnavailable, setImageUnavailable] = useState(false)
 
@@ -37,7 +39,7 @@ function ProductCard({ product, onOpenProduct }) {
   return (
     <div
       className={`product-card ${
-        isSold ? 'product-card-sold' : ''
+        isSoldOut ? 'product-card-sold' : ''
       }`}
     >
       <Link
@@ -73,7 +75,7 @@ function ProductCard({ product, onOpenProduct }) {
                 isReserved ? 'reserved' : 'sold'
               }`}
             >
-              {isReserved ? 'Reserved' : 'Sold'}
+              {isReserved ? 'Reserved' : 'Sold out'}
             </span>
           )}
 
@@ -120,7 +122,7 @@ function ProductCard({ product, onOpenProduct }) {
         >
           {isAvailable && `${product.stock} available`}
           {isReserved && 'Currently reserved'}
-          {isSold && 'Sold'}
+          {isSoldOut && 'Sold out'}
         </p>
 
         <div>
