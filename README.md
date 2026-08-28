@@ -1,73 +1,74 @@
 # Lovelyn It!
 
-Lovelyn It! is a real, finite-inventory product catalog and storefront for browsing and inquiring about new and unused items. It was built for an active small-business catalog rather than as a static mockup: products, availability, images, and admin updates come from Supabase.
+Lovelyn It! is a live React and Supabase storefront for a real, limited-inventory catalog of new and unused items. It is designed for a small seller who manages listings and availability directly, while buyers browse actual item photos and inquire through Facebook Messenger.
 
 Live storefront: [lovelyn-it.pages.dev](https://lovelyn-it.pages.dev/)
 
-## Features
+## What it does
 
 ### Customer storefront
 
-- Browse a product catalog with prices, conditions, quantities, and availability.
-- Search by product name, brand, or category.
-- Filter by Bags & Wallets, Clothing, Accessories, Intimates, and Kitchen & Home.
-- Open product detail pages with descriptions, cover photos, gallery images, and status information.
-- Distinguish Available, Reserved, and Sold items at a glance.
-- Use Facebook Messenger to ask about an available item and share product links through the Web Share API or clipboard fallback.
-- See only published products in the public catalog and on public product-detail routes.
-- Navigate comfortably on phone, tablet, and desktop layouts.
+- Browse published products with real photos, pricing, condition, availability, and optional galleries.
+- Search by product name or brand and filter by the currently published categories.
+- View detail pages with share support and a Messenger inquiry path.
+- Distinguish **Available**, **Reserved**, and **Sold out** items.
+- Choose a size or variant only when that option has physical stock and is not fully reserved.
 
-### Admin workspace
+Lovelyn It! is intentionally an inquiry storefront. It does not include checkout, payment processing, customer accounts, order management, or automatic reservation expiration.
 
-- Sign in with Supabase Auth using email and password.
-- Add, edit, and delete products.
-- Save products as unpublished drafts or publish them when ready.
-- Update prices, stock quantities, and Available / Reserved / Sold status.
-- Upload, replace, remove, and preview cover images.
-- Add and remove gallery images, with duplicate image-path handling.
-- Filter the inventory by search term, category, status, and publication state.
+### Admin inventory workspace
 
-## Tech stack
+- Sign in through Supabase Auth to manage the catalog.
+- Create, rename, order, deactivate, and safely remove unused categories.
+- Add, edit, publish, unpublish, and delete products where database rules allow it.
+- Manage freeform size or variant labels such as bra sizes, clothing sizes, or any custom label needed for a product.
+- Manage cover images and gallery images in Supabase Storage.
+- Record completed sales and view an admin-only Sales History page.
+- Reserve or release specific quantities for a product or a specific variant.
 
-- React 19
-- Vite 8
-- React Router 7
-- Supabase JavaScript client for database, Auth, and Storage access
-- ESLint with React Hooks and React Refresh rules
-- Plain CSS for the responsive visual system
+## Inventory rules
+
+Inventory is built for finite stock and avoids treating a completed sale as the same thing as current availability.
+
+- Non-variant products use one physical stock quantity.
+- Variant products use physical stock per size or variant; the product total is derived from its active variants.
+- Every inventory record can also have a reserved quantity.
+- **Available quantity = physical stock − reserved quantity.**
+- A normal sale can use only unreserved stock. A sale that completes a reservation must explicitly use reserved stock.
+- A product becomes **Sold out** when its physical stock reaches zero. It becomes **Reserved** when physical stock remains but all of it is reserved, or when the admin applies a manual whole-listing reservation.
+- Zero-physical-stock variants are not offered to customers. Fully reserved variants remain visible as Reserved but cannot be selected.
+- Releasing a reservation makes that quantity available again; reservations do not expire automatically.
+
+Sales are recorded with a product and variant snapshot, quantity, sale price, date, optional note, and whether reserved stock was used. Products and variants with history or active reservations are protected from unsafe deletion or retirement.
 
 ## Architecture
 
-The application is a React single-page app with a small route surface:
+Lovelyn It! is a React single-page app built with Vite and React Router.
 
-- `/` — customer storefront, search, filters, featured products, and store information
-- `/products/:slug` — customer product details and gallery
-- `/admin` — authenticated inventory dashboard
+- `/` — published catalog, search, filters, and storefront information
+- `/products/:slug` — product detail, gallery, sharing, and Messenger inquiry
+- `/admin` — authenticated inventory workspace
 - `/admin/products/new` — product creation
-- `/admin/products/:id/edit` — product editing and image management
-- Any other path — custom not-found page
+- `/admin/products/:id/edit` — product, image, variant, reservation, and sales actions
+- `/admin/sales` — authenticated sales history
+- Other paths — custom not-found page
 
-Supabase provides the `products` data, `product_images` gallery records, email/password sessions, and the `product-images` Storage bucket. Shared utilities centralize product categories, inventory-state validation, public image URLs, and duplicate image-path handling. The storefront queries published products, while admin workflows load and manage the inventory after authentication.
+Supabase provides the database, Auth session handling, and `product-images` Storage bucket. Core records include products, admin-managed categories, product gallery images, optional product variants, and sales history. Shared frontend utilities keep category ordering, inventory presentation, public image URLs, and gallery duplicate handling consistent.
 
 ## Security and data integrity
 
-- The browser client uses the Supabase URL and publishable key only; no service-role key belongs in frontend code.
-- Public storefront queries explicitly request `published = true`, including product-detail lookups.
-- Admin screens require a Supabase Auth session before exposing product-management workflows.
-- Supabase Row Level Security and Storage policies are the authoritative boundary for unpublished-product visibility and admin-only writes. Those policies are managed in the Supabase project rather than stored in this repository.
-- Inventory validation keeps the application’s status rules consistent: Available items need stock, while Reserved and Sold items have zero available stock.
-- The deployed Supabase schema also enforces data-integrity rules including unique product slugs, valid inventory statuses, non-negative stock and prices, and consistency between product status and available stock.
+- The browser uses only the Supabase URL and publishable key; service-role credentials never belong in frontend code.
+- Public catalog reads are limited to published products. Admin access relies on Supabase Auth plus Row Level Security policies.
+- Database constraints protect unique product slugs, non-negative prices and quantities, valid statuses, reservation limits, and variant/product inventory consistency.
+- Inventory-changing actions use PostgreSQL/Supabase RPCs with admin authorization and row locking. Recording a sale, reducing the correct stock, and writing sales history happen together, helping prevent overselling and partial updates.
+- The `sales` table is admin-only. Frontend validation improves the experience but is not treated as the security boundary.
 
 ## UX, performance, and accessibility
 
-- Responsive layouts adapt the storefront, filters, product cards, detail pages, and admin screens to narrow widths.
-- Catalog and route loading states provide feedback while data or lazy-loaded pages are arriving.
-- Catalog failures and product-detail failures have separate, retryable error states.
-- Product images use explicit dimensions, lazy loading where appropriate, asynchronous decoding, priority hints, and graceful fallbacks.
-- Product detail routes and admin routes are lazy-loaded to keep the initial customer bundle smaller.
-- Product cards and controls include keyboard-visible focus states and semantic labels.
-- Reduced-motion preferences disable nonessential transitions and smooth scrolling.
-- Browser-back navigation restores the catalog position when returning from a product page.
+- Responsive storefront and admin layouts for phone, tablet, and desktop use.
+- Loading, retry, and empty states for catalog, detail, inventory, and sales workflows.
+- Lazy-loaded routes, responsive image behavior, async decoding, image fallbacks, and gallery duplicate handling.
+- Keyboard-visible focus styles, semantic controls and labels, reduced-motion support, and catalog scroll restoration when returning from product pages.
 
 ## Local development
 
@@ -78,20 +79,19 @@ npm install
 npm run dev
 ```
 
-The development server runs through Vite and prints its local URL in the terminal.
-
-Run the available checks with:
+On Windows PowerShell, use `npm.cmd` if script execution blocks `npm`:
 
 ```bash
-npm run lint
-npm run build
+npm.cmd run lint
+npm.cmd test
+npm.cmd run build
 ```
 
 The production build is written to `dist/`.
 
 ## Environment variables
 
-Create a local `.env.local` file with the required variable names:
+Create a local `.env.local` file with variable names only:
 
 ```text
 VITE_SUPABASE_URL=
@@ -99,25 +99,29 @@ VITE_SUPABASE_PUBLISHABLE_KEY=
 VITE_MESSENGER_USERNAME=
 ```
 
-Use a publishable/anon client key only. Never commit `.env.local` or place a Supabase service-role key in a `VITE_` variable.
+Never commit local environment files or expose a service-role key in a `VITE_` variable.
+
+## Database migrations and release process
+
+Version-controlled database migrations live in [`supabase/migrations`](supabase/migrations). They define the category, variants, sales, reservation, RLS, grant, and RPC changes used by the application.
+
+Database changes should be reviewed and applied to staging first, then tested there with the matching application branch before any production rollout. Applying a migration is an external database operation and is intentionally separate from deploying the frontend.
 
 ## Deployment
 
-The production storefront is hosted on Cloudflare Pages. The application is built with `npm run build`, which generates the production files in `dist/`. Client-side routes require SPA fallback behavior so direct visits to product and admin routes resolve correctly.
+The production storefront is hosted on Cloudflare Pages. Run `npm run build` to generate `dist/`; deployment needs SPA fallback behavior so direct visits to product and admin routes resolve correctly.
 
-Provider-specific deployment configuration is not stored in this repository.
+Provider-specific deployment settings are not stored in this repository.
 
 ## Project status
 
-Feature-complete and production-ready for the current storefront and admin workflows.
+Feature-complete and production-ready for its current finite-inventory, Messenger-based selling workflow. Sales History may initially be empty until completed sales are recorded.
 
 ## What this project demonstrates
 
-- Building a customer-facing React storefront for a real catalog
-- Responsive UI design and accessible browsing interactions
-- Supabase database, Auth, and Storage integration
-- Authenticated CRUD and inventory-management workflows
-- Product image and gallery handling
-- Search, filtering, route-based detail pages, and custom 404 handling
-- Performance-minded loading, image behavior, and route splitting
-- Honest security boundaries between frontend validation and backend policy enforcement
+- Customer-facing React development and responsive UI work
+- Real inventory and availability modeling for a finite catalog
+- Supabase Auth, RLS, Storage, and PostgreSQL integration
+- Admin CRUD, category management, freeform variants, reservations, and sales history
+- Atomic database operations and overselling protection
+- Image/gallery management, route-based detail pages, accessibility, and performance-focused loading
