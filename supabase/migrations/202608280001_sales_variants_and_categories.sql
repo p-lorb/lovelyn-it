@@ -94,7 +94,7 @@ alter table public.products
 
 create table if not exists public.product_variants (
   id uuid primary key default gen_random_uuid(),
-  product_id uuid not null references public.products(id) on delete restrict,
+  product_id bigint not null references public.products(id) on delete restrict,
   label text not null check (btrim(label) <> ''),
   stock integer not null default 0 check (stock >= 0),
   sort_order integer not null default 0 check (sort_order >= 0),
@@ -113,7 +113,7 @@ create index if not exists product_variants_product_sort_index
 
 create table if not exists public.sales (
   id uuid primary key default gen_random_uuid(),
-  product_id uuid not null references public.products(id) on delete restrict,
+  product_id bigint not null references public.products(id) on delete restrict,
   variant_id uuid references public.product_variants(id) on delete restrict,
   product_name text not null check (btrim(product_name) <> ''),
   variant_label text,
@@ -173,7 +173,7 @@ before update of product_id on public.product_variants
 for each row execute function public.prevent_variant_product_move();
 
 create or replace function public.refresh_variant_product_stock(
-  p_product_id uuid
+  p_product_id bigint
 )
 returns void
 language plpgsql
@@ -214,7 +214,7 @@ $$;
 -- their runtime available to their triggers while preventing direct API calls.
 revoke all on function public.set_lovelyn_updated_at() from public, anon, authenticated;
 revoke all on function public.prevent_variant_product_move() from public, anon, authenticated;
-revoke all on function public.refresh_variant_product_stock(uuid) from public, anon, authenticated;
+revoke all on function public.refresh_variant_product_stock(bigint) from public, anon, authenticated;
 revoke all on function public.sync_variant_product_stock() from public, anon, authenticated;
 
 drop trigger if exists product_variants_sync_product_stock on public.product_variants;
@@ -276,7 +276,7 @@ alter table public.products
   check (status <> 'sold' or stock = 0);
 
 create or replace function public.record_sale(
-  p_product_id uuid,
+  p_product_id bigint,
   p_quantity integer,
   p_unit_price numeric,
   p_variant_id uuid default null,
@@ -284,7 +284,7 @@ create or replace function public.record_sale(
 )
 returns table (
   sale_id uuid,
-  product_id uuid,
+  product_id bigint,
   variant_id uuid,
   remaining_product_stock integer,
   remaining_variant_stock integer,
@@ -415,11 +415,11 @@ begin
 end;
 $$;
 
-revoke all on function public.record_sale(uuid, integer, numeric, uuid, text) from public, anon, authenticated;
-grant execute on function public.record_sale(uuid, integer, numeric, uuid, text) to authenticated;
+revoke all on function public.record_sale(bigint, integer, numeric, uuid, text) from public, anon, authenticated;
+grant execute on function public.record_sale(bigint, integer, numeric, uuid, text) to authenticated;
 
 create or replace function public.get_public_product_variants(
-  p_product_id uuid
+  p_product_id bigint
 )
 returns table (
   id uuid,
@@ -444,8 +444,8 @@ as $$
   order by variant.sort_order asc, variant.id asc;
 $$;
 
-revoke all on function public.get_public_product_variants(uuid) from public, anon, authenticated;
-grant execute on function public.get_public_product_variants(uuid) to anon, authenticated;
+revoke all on function public.get_public_product_variants(bigint) from public, anon, authenticated;
+grant execute on function public.get_public_product_variants(bigint) to anon, authenticated;
 
 alter table public.categories enable row level security;
 alter table public.product_variants enable row level security;
