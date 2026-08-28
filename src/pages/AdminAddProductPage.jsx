@@ -486,7 +486,7 @@ function AdminAddProductPage() {
           <div className="admin-add-success-actions">
             <Link
               to={`/admin/products/${createdProduct.id}/edit`}
-              className="admin-add-product-button"
+              className="admin-action-button admin-action-button-primary"
             >
               Edit product
             </Link>
@@ -494,14 +494,14 @@ function AdminAddProductPage() {
             <button
               type="button"
               onClick={resetForm}
-              className="admin-edit-button"
+              className="admin-action-button admin-action-button-secondary"
             >
               Add another
             </button>
 
             <Link
               to="/admin"
-              className="admin-edit-button"
+              className="admin-action-button admin-action-button-tertiary"
             >
               Back to products
             </Link>

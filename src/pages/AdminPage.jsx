@@ -645,20 +645,23 @@ function AdminPage() {
         </div>
 
         <div className="admin-header-actions">
-          <Link to="/admin/sales" className="admin-edit-button">
+          <Link
+            to="/admin/sales"
+            className="admin-action-button admin-action-button-secondary"
+          >
             Sales
           </Link>
 
           <Link
             to="/admin/products/new"
-            className="admin-add-product-button"
+            className="admin-action-button admin-action-button-primary"
           >
             + Add product
           </Link>
 
           <button
             type="button"
-            className="admin-signout"
+            className="admin-action-button admin-action-button-tertiary"
             onClick={handleLogout}
           >
             Sign out

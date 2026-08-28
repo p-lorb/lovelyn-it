@@ -34,3 +34,19 @@ export function withCategoryName(product) {
 export function withCategoryNames(products) {
   return (products ?? []).map(withCategoryName)
 }
+
+export function getCategoryDeletionState(productCount) {
+  const count = Number(productCount)
+
+  if (!Number.isInteger(count) || count < 0) {
+    return {
+      canDelete: false,
+      productCount: null,
+    }
+  }
+
+  return {
+    canDelete: count === 0,
+    productCount: count,
+  }
+}

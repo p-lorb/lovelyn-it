@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { getVariantStockTotal } from '../lib/inventory'
+import {
+  getVariantConversionState,
+  getVariantStockTotal,
+} from '../lib/inventory'
 
 function VariantManager({ product, onProductChange }) {
   const [variants, setVariants] = useState([])
@@ -9,6 +12,7 @@ function VariantManager({ product, onProductChange }) {
   const [newStock, setNewStock] = useState('0')
   const [savingId, setSavingId] = useState(null)
   const [message, setMessage] = useState('')
+  const conversionState = getVariantConversionState(product.stock)
 
   async function loadVariants() {
     if (!product.has_variants) {
@@ -61,10 +65,8 @@ function VariantManager({ product, onProductChange }) {
   }
 
   async function enableVariants() {
-    if (Number(product.stock) > 0) {
-      setMessage(
-        'To avoid guessing how existing stock should be split, variant inventory can only be enabled once shared stock is 0.'
-      )
+    if (!conversionState.canEnable) {
+      setMessage(conversionState.message)
       return
     }
 
@@ -266,10 +268,20 @@ function VariantManager({ product, onProductChange }) {
             This product currently uses one shared stock quantity.
           </p>
 
+          <p
+            className="admin-variant-conversion-note"
+            id="variant-conversion-note"
+          >
+            {conversionState.message}
+          </p>
+
           <button
             type="button"
             onClick={enableVariants}
-            disabled={savingId === 'mode'}
+            disabled={
+              savingId === 'mode' || !conversionState.canEnable
+            }
+            aria-describedby="variant-conversion-note"
           >
             {savingId === 'mode'
               ? 'Enabling...'

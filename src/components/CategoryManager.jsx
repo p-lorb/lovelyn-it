@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { sortCategories } from '../lib/categories'
+import {
+  getCategoryDeletionState,
+  sortCategories,
+} from '../lib/categories'
 
 function CategoryManager({ categories, onCategoriesChanged }) {
   const [newCategoryName, setNewCategoryName] = useState('')
@@ -166,12 +169,73 @@ function CategoryManager({ categories, onCategoriesChanged }) {
     setSavingId(null)
   }
 
+  async function deleteCategory(category) {
+    setSavingId(category.id)
+    setMessage('')
+
+    const { count, error: usageError } = await supabase
+      .from('products')
+      .select('id', { count: 'exact', head: true })
+      .eq('category_id', category.id)
+
+    if (usageError) {
+      console.error('Category usage check error:', usageError)
+      setMessage('Could not verify whether this category is in use.')
+      setSavingId(null)
+      return
+    }
+
+    const deletionState = getCategoryDeletionState(count)
+
+    if (!deletionState.canDelete) {
+      if (deletionState.productCount === null) {
+        setMessage('Could not verify whether this category is in use.')
+      } else {
+        setMessage(
+          `${category.name} is used by ${deletionState.productCount} product${
+            deletionState.productCount === 1 ? '' : 's'
+          }. It cannot be deleted; deactivate it instead.`
+        )
+      }
+      setSavingId(null)
+      return
+    }
+
+    if (!window.confirm(`Permanently delete ${category.name}?`)) {
+      setSavingId(null)
+      return
+    }
+
+    const { data: deletedCategory, error: deleteError } = await supabase
+      .from('categories')
+      .delete()
+      .eq('id', category.id)
+      .select('id')
+      .maybeSingle()
+
+    if (deleteError || !deletedCategory) {
+      console.error('Delete category error:', deleteError)
+      setMessage(
+        deleteError?.code === '23503'
+          ? `${category.name} is now in use and cannot be deleted. Deactivate it instead.`
+          : deleteError?.message || 'Could not delete this category.'
+      )
+    } else {
+      onCategoriesChanged(
+        categories.filter((item) => item.id !== category.id)
+      )
+      setMessage(`${category.name} was deleted.`)
+    }
+
+    setSavingId(null)
+  }
+
   return (
     <section className="admin-category-manager">
       <div className="admin-category-manager-heading">
         <div>
           <h2>Categories</h2>
-          <p>Create, rename, order, or deactivate categories.</p>
+          <p>Create, rename, order, deactivate, or delete unused categories.</p>
         </div>
       </div>
 
@@ -268,6 +332,15 @@ function CategoryManager({ categories, onCategoriesChanged }) {
                 disabled={savingId === category.id}
               >
                 {category.is_active ? 'Deactivate' : 'Activate'}
+              </button>
+
+              <button
+                type="button"
+                className="admin-category-delete"
+                onClick={() => deleteCategory(category)}
+                disabled={savingId === category.id}
+              >
+                Delete
               </button>
             </div>
           </div>

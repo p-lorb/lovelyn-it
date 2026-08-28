@@ -63,6 +63,31 @@ export function getVariantStockTotal(variants) {
   }, 0)
 }
 
+export function getVariantConversionState(sharedStock) {
+  const stock = toStockNumber(sharedStock)
+
+  if (stock === 0) {
+    return {
+      canEnable: true,
+      message:
+        'Shared stock is 0. You can safely switch to size or variant stock.',
+    }
+  }
+
+  if (stock !== null) {
+    return {
+      canEnable: false,
+      message: `Shared stock is currently ${stock}. To switch to size or variant stock, shared stock must be 0 first. This prevents existing units from being assigned to sizes automatically.`,
+    }
+  }
+
+  return {
+    canEnable: false,
+    message:
+      'Shared stock must be a valid whole number before switching to size or variant stock.',
+  }
+}
+
 export function getAvailableVariants(variants) {
   return (variants ?? [])
     .filter(

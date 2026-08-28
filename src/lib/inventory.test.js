@@ -3,6 +3,7 @@ import test from 'node:test'
 import {
   getAvailableVariants,
   getEffectiveInventoryStatus,
+  getVariantConversionState,
   getVariantStockTotal,
   inventoryStateIsValid,
   INVENTORY_STATUSES,
@@ -132,4 +133,19 @@ test('all zero-stock variants produce a zero total', () => {
   ]
 
   assert.equal(getVariantStockTotal(variants), 0)
+})
+
+test('shared stock must be zero before variant inventory can be enabled', () => {
+  const conversion = getVariantConversionState(3)
+
+  assert.equal(conversion.canEnable, false)
+  assert.match(conversion.message, /currently 3/)
+  assert.match(conversion.message, /must be 0 first/)
+})
+
+test('zero shared stock allows safe variant inventory conversion', () => {
+  const conversion = getVariantConversionState(0)
+
+  assert.equal(conversion.canEnable, true)
+  assert.match(conversion.message, /Shared stock is 0/)
 })
