@@ -28,7 +28,7 @@ as $$
   );
 $$;
 
-revoke all on function public.is_lovelyn_admin() from public;
+revoke all on function public.is_lovelyn_admin() from public, anon, authenticated;
 grant execute on function public.is_lovelyn_admin() to anon, authenticated;
 
 create table if not exists public.categories (
@@ -209,6 +209,13 @@ begin
   return coalesce(new, old);
 end;
 $$;
+
+-- These functions are trigger/internal helpers, not Data API endpoints. Keep
+-- their runtime available to their triggers while preventing direct API calls.
+revoke all on function public.set_lovelyn_updated_at() from public, anon, authenticated;
+revoke all on function public.prevent_variant_product_move() from public, anon, authenticated;
+revoke all on function public.refresh_variant_product_stock(uuid) from public, anon, authenticated;
+revoke all on function public.sync_variant_product_stock() from public, anon, authenticated;
 
 drop trigger if exists product_variants_sync_product_stock on public.product_variants;
 create trigger product_variants_sync_product_stock
@@ -408,7 +415,7 @@ begin
 end;
 $$;
 
-revoke all on function public.record_sale(uuid, integer, numeric, uuid, text) from public;
+revoke all on function public.record_sale(uuid, integer, numeric, uuid, text) from public, anon, authenticated;
 grant execute on function public.record_sale(uuid, integer, numeric, uuid, text) to authenticated;
 
 create or replace function public.get_public_product_variants(
@@ -437,12 +444,29 @@ as $$
   order by variant.sort_order asc, variant.id asc;
 $$;
 
-revoke all on function public.get_public_product_variants(uuid) from public;
+revoke all on function public.get_public_product_variants(uuid) from public, anon, authenticated;
 grant execute on function public.get_public_product_variants(uuid) to anon, authenticated;
 
 alter table public.categories enable row level security;
 alter table public.product_variants enable row level security;
 alter table public.sales enable row level security;
+
+-- Supabase Data API permissions are separate from RLS. New tables are kept
+-- private by default, then given only the object-level privileges their flows
+-- require. RLS below still decides which rows each role can access.
+grant usage on schema public to anon, authenticated;
+
+revoke all on table public.categories from public, anon, authenticated;
+grant select on table public.categories to anon;
+grant select, insert, update, delete on table public.categories to authenticated;
+
+revoke all on table public.product_variants from public, anon, authenticated;
+grant select, insert, update, delete on table public.product_variants to authenticated;
+
+revoke all on table public.sales from public, anon, authenticated;
+grant select on table public.sales to authenticated;
+
+revoke all on table public.admin_users from public, anon, authenticated;
 
 drop policy if exists categories_public_read_active on public.categories;
 create policy categories_public_read_active
