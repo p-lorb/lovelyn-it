@@ -8,6 +8,7 @@ import {
 } from '../lib/productImages'
 import { withCategoryName } from '../lib/categories'
 import {
+  getAvailableQuantity,
   getEffectiveInventoryStatus,
 } from '../lib/inventory'
 import './ProductPage.css'
@@ -233,11 +234,12 @@ function ProductPage() {
     (variant) => variant.id === selectedVariantId
   )
   const needsVariantSelection = Boolean(product.has_variants)
+  const availableQuantity = getAvailableQuantity(product)
 
   const canMessage =
     isAvailable &&
     Boolean(messengerUrl) &&
-    (!needsVariantSelection || Boolean(selectedVariant))
+    (!needsVariantSelection || Boolean(selectedVariant?.is_available))
 
   const priceLabel =
     product.price !== null
@@ -568,7 +570,7 @@ function ProductPage() {
 
               {isAvailable && (
                 <span>
-                  {product.stock} available
+                  {availableQuantity} available
                 </span>
               )}
 
@@ -597,7 +599,7 @@ function ProductPage() {
                 aria-labelledby="product-variant-title"
               >
                 <h2 id="product-variant-title">
-                  Available sizes
+                  Sizes
                 </h2>
 
                 {variantsError ? (
@@ -608,7 +610,7 @@ function ProductPage() {
                   <div
                     className="product-variant-options"
                     role="radiogroup"
-                    aria-label="Choose an available size"
+                    aria-label="Choose a size"
                   >
                     {variants.map((variant) => (
                       <button
@@ -618,66 +620,30 @@ function ProductPage() {
                           selectedVariantId === variant.id
                             ? 'active'
                             : ''
-                        }`}
+                        } ${isAvailable && variant.is_available ? '' : 'reserved'}`}
                         role="radio"
                         aria-checked={
                           selectedVariantId === variant.id
                         }
+                        disabled={!isAvailable || !variant.is_available}
                         onClick={() =>
                           setSelectedVariantId(variant.id)
                         }
                       >
-                        {variant.label}
+                        <span>{variant.label}</span>
+                        {(!isAvailable || !variant.is_available) && (
+                          <small>Reserved</small>
+                        )}
                       </button>
                     ))}
                   </div>
                 ) : (
                   <p className="product-variant-empty">
-                    No size is currently available.
+                    No size is currently in stock.
                   </p>
                 )}
               </section>
             )}
-
-            <div className="product-share">
-              <button
-                type="button"
-                className="product-share-button"
-                onClick={handleShareProduct}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <circle cx="18" cy="5" r="2.5" />
-                  <circle cx="6" cy="12" r="2.5" />
-                  <circle cx="18" cy="19" r="2.5" />
-                  <path d="m8.2 10.8 7.6-4.5M8.2 13.2l7.6 4.5" />
-                </svg>
-
-                <span>
-                  {shareStatus === 'copied'
-                    ? 'Product link copied ✓'
-                    : shareStatus === 'shared'
-                      ? 'Shared ✓'
-                      : 'Share this item'}
-                </span>
-              </button>
-
-              <p
-                className={`product-share-status ${
-                  shareStatus === 'failed' ? 'error' : ''
-                }`}
-                aria-live="polite"
-              >
-                {shareStatus === 'copied' &&
-                  'The link is ready to paste into Facebook, Messenger, or a group post.'}
-                {shareStatus === 'shared' &&
-                  'The product was shared successfully.'}
-                {shareStatus === 'failed' &&
-                  'The link couldn’t be shared. You can copy it from the address bar instead.'}
-              </p>
-            </div>
 
             <section className="product-description">
               <h2>
@@ -721,6 +687,42 @@ function ProductPage() {
                     This product is no longer available to order.
                   </p>
                 )}
+              </div>
+
+              <div className="product-share product-inquiry-share">
+                <button
+                  type="button"
+                  className="product-share-button"
+                  onClick={handleShareProduct}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="18" cy="5" r="2.5" />
+                    <circle cx="6" cy="12" r="2.5" />
+                    <circle cx="18" cy="19" r="2.5" />
+                    <path d="m8.2 10.8 7.6-4.5M8.2 13.2l7.6 4.5" />
+                  </svg>
+                  <span>
+                    {shareStatus === 'copied'
+                      ? 'Product link copied ✓'
+                      : shareStatus === 'shared'
+                        ? 'Shared ✓'
+                        : 'Share this item'}
+                  </span>
+                </button>
+
+                <p
+                  className={`product-share-status ${
+                    shareStatus === 'failed' ? 'error' : ''
+                  }`}
+                  aria-live="polite"
+                >
+                  {shareStatus === 'copied' &&
+                    'The link is ready to paste into Facebook, Messenger, or a group post.'}
+                  {shareStatus === 'shared' &&
+                    'The product was shared successfully.'}
+                  {shareStatus === 'failed' &&
+                    'The link couldn’t be shared. You can copy it from the address bar instead.'}
+                </p>
               </div>
 
               {isAvailable && (

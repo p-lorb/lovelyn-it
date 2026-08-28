@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { inventoryStateIsValid } from '../lib/inventory'
+import {
+  getAvailableQuantity,
+  inventoryStateIsValid,
+} from '../lib/inventory'
 import { sortCategories, withCategoryName } from '../lib/categories'
 import {
   getProductImageUrl,
@@ -10,6 +13,7 @@ import {
 import './AdminEditProductPage.css'
 import VariantManager from '../components/VariantManager'
 import RecordSaleDialog from '../components/RecordSaleDialog'
+import ReservationDialog from '../components/ReservationDialog'
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024
 
@@ -61,6 +65,7 @@ function AdminEditProductPage() {
   const [isGalleryDragging, setIsGalleryDragging] = useState(false)
   const [categories, setCategories] = useState([])
   const [showSaleDialog, setShowSaleDialog] = useState(false)
+  const [reservationMode, setReservationMode] = useState(null)
 
   useEffect(() => {
     async function loadPage() {
@@ -278,6 +283,13 @@ function AdminEditProductPage() {
     ) {
       setErrorMessage(
         'Stock must be a whole number of 0 or higher.'
+      )
+      return
+    }
+
+    if (stock < Number(product.reserved_quantity ?? 0)) {
+      setErrorMessage(
+        `Stock cannot be lower than ${product.reserved_quantity ?? 0} reserved unit(s). Release the reservation first.`
       )
       return
     }
@@ -1492,7 +1504,7 @@ function AdminEditProductPage() {
               <input
                 type="number"
                 name="stock"
-                min="0"
+                min={product.reserved_quantity ?? 0}
                 step="1"
                 value={formData.stock}
                 onChange={
@@ -1503,6 +1515,10 @@ function AdminEditProductPage() {
 
               {product.has_variants && (
                 <small>Calculated from active variants below.</small>
+              )}
+
+              {!product.has_variants && Number(product.reserved_quantity ?? 0) > 0 && (
+                <small>{product.reserved_quantity} unit(s) currently reserved.</small>
               )}
             </label>
 
@@ -1619,6 +1635,24 @@ function AdminEditProductPage() {
 
           <button
             type="button"
+            className="admin-edit-save"
+            disabled={getAvailableQuantity(product) === 0}
+            onClick={() => setReservationMode('reserve')}
+          >
+            Reserve stock
+          </button>
+
+          <button
+            type="button"
+            className="admin-edit-save"
+            disabled={Number(product.reserved_quantity ?? 0) === 0}
+            onClick={() => setReservationMode('release')}
+          >
+            Release reservation
+          </button>
+
+          <button
+            type="button"
             className="admin-edit-delete"
             onClick={
               handleDeleteProduct
@@ -1650,6 +1684,18 @@ function AdminEditProductPage() {
           onClose={() => setShowSaleDialog(false)}
           onRecorded={() => {
             setShowSaleDialog(false)
+            window.location.reload()
+          }}
+        />
+      )}
+
+      {reservationMode && (
+        <ReservationDialog
+          product={product}
+          mode={reservationMode}
+          onClose={() => setReservationMode(null)}
+          onCompleted={() => {
+            setReservationMode(null)
             window.location.reload()
           }}
         />

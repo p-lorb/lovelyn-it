@@ -186,6 +186,12 @@
   margin-top: -0.25rem;
 }
 
+.product-inquiry-share {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(62, 91, 62, 0.18);
+}
+
 .product-share-button {
   display: inline-flex;
   align-items: center;
@@ -413,6 +419,20 @@
 .product-variant-option:focus-visible {
   outline: 3px solid rgba(62, 91, 62, 0.25);
   outline-offset: 2px;
+}
+
+.product-variant-option.reserved {
+  border-style: dashed;
+  border-color: rgba(124, 122, 110, 0.5);
+  background: rgba(124, 122, 110, 0.08);
+  color: #7C7A6E;
+  cursor: not-allowed;
+}
+
+.product-variant-option.reserved small {
+  margin-left: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 .product-variant-empty,

@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import {
+  canRecordSaleQuantity,
+  getAvailableQuantity,
+  getReservedQuantity,
+} from '../lib/inventory'
 
 function RecordSaleDialog({ product, onClose, onRecorded }) {
   const [variants, setVariants] = useState([])
@@ -12,6 +17,7 @@ function RecordSaleDialog({ product, onClose, onRecorded }) {
   )
   const [variantId, setVariantId] = useState('')
   const [note, setNote] = useState('')
+  const [useReservedStock, setUseReservedStock] = useState(false)
   const [saving, setSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -43,6 +49,10 @@ function RecordSaleDialog({ product, onClose, onRecorded }) {
     loadVariants()
   }, [product.has_variants, product.id])
 
+  const selectedVariant = variants.find((variant) => variant.id === variantId)
+  const saleInventory = product.has_variants ? selectedVariant : product
+  const reservedQuantity = getReservedQuantity(saleInventory)
+
   async function handleSubmit(event) {
     event.preventDefault()
     setErrorMessage('')
@@ -65,6 +75,15 @@ function RecordSaleDialog({ product, onClose, onRecorded }) {
       return
     }
 
+    if (!canRecordSaleQuantity(saleInventory, parsedQuantity, useReservedStock)) {
+      setErrorMessage(
+        useReservedStock
+          ? 'That quantity is no longer reserved for this sale.'
+          : 'That quantity is no longer available for a regular sale.'
+      )
+      return
+    }
+
     setSaving(true)
 
     const { data, error } = await supabase.rpc('record_sale', {
@@ -73,6 +92,7 @@ function RecordSaleDialog({ product, onClose, onRecorded }) {
       p_unit_price: parsedPrice,
       p_variant_id: product.has_variants ? variantId : null,
       p_note: note,
+      p_use_reserved_stock: useReservedStock,
     })
 
     if (error) {
@@ -117,7 +137,10 @@ function RecordSaleDialog({ product, onClose, onRecorded }) {
               Size or variant
               <select
                 value={variantId}
-                onChange={(event) => setVariantId(event.target.value)}
+                onChange={(event) => {
+                  setVariantId(event.target.value)
+                  setUseReservedStock(false)
+                }}
                 disabled={variantsLoading || saving}
               >
                 <option value="">
@@ -128,7 +151,7 @@ function RecordSaleDialog({ product, onClose, onRecorded }) {
 
                 {variants.map((variant) => (
                   <option value={variant.id} key={variant.id}>
-                    {variant.label} ({variant.stock} available)
+                    {variant.label} ({getAvailableQuantity(variant)} available, {getReservedQuantity(variant)} reserved)
                   </option>
                 ))}
               </select>
@@ -161,6 +184,18 @@ function RecordSaleDialog({ product, onClose, onRecorded }) {
               />
             </label>
           </div>
+
+          {reservedQuantity > 0 && (
+            <label className="admin-dialog-check">
+              <input
+                type="checkbox"
+                checked={useReservedStock}
+                onChange={(event) => setUseReservedStock(event.target.checked)}
+                disabled={saving}
+              />
+              <span>Use reserved stock for this sale ({reservedQuantity} reserved)</span>
+            </label>
+          )}
 
           <label>
             Note <span>(optional)</span>

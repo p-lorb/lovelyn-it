@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getProductImageUrl } from '../lib/productImages'
-import { getEffectiveInventoryStatus } from '../lib/inventory'
+import {
+  getAvailableQuantity,
+  getEffectiveInventoryStatus,
+} from '../lib/inventory'
 
 export function ProductCardSkeleton() {
   return (
@@ -31,6 +34,7 @@ function ProductCard({ product, onOpenProduct }) {
   const isAvailable = effectiveStatus === 'available'
   const isReserved = effectiveStatus === 'reserved'
   const isSoldOut = effectiveStatus === 'sold_out'
+  const availableQuantity = getAvailableQuantity(product)
   const [imageLoaded, setImageLoaded] = useState(false)
   const [imageUnavailable, setImageUnavailable] = useState(false)
 
@@ -120,7 +124,7 @@ function ProductCard({ product, onOpenProduct }) {
                 : 'sold'
           }`}
         >
-          {isAvailable && `${product.stock} available`}
+          {isAvailable && `${availableQuantity} available`}
           {isReserved && 'Currently reserved'}
           {isSoldOut && 'Sold out'}
         </p>

@@ -2211,6 +2211,9 @@
 .admin-dialog-actions button { min-height: 42px; padding: 0.6rem 0.9rem; border: 1px solid #3E5B3E; border-radius: 5px; background: #3E5B3E; color: #FFFDF8; font-weight: 800; cursor: pointer; }
 .admin-dialog-actions .admin-dialog-cancel { background: transparent; color: #3E5B3E; }
 .admin-dialog-error { margin: 0; color: #8a3d22; font-size: 0.85rem; }
+.admin-dialog-stock-note { margin: 0; color: #5F5C52; font-size: 0.85rem; line-height: 1.5; }
+.admin-dialog-form .admin-dialog-check { display: flex; align-items: flex-start; gap: 0.55rem; font-weight: 700; }
+.admin-dialog-check input { width: auto; min-height: auto; margin-top: 0.15rem; }
 
 .admin-sales-page { width: min(1100px, 92%); margin: 0 auto; padding: 2.5rem 0 5rem; }
 .admin-sales-table-wrap { overflow-x: auto; border: 1px solid rgba(62, 91, 62, 0.18); border-radius: 8px; background: #FFFDF8; }

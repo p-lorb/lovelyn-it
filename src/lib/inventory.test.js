@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
+  canRecordSaleQuantity,
+  canReleaseReservation,
+  canReserveQuantity,
+  getAvailableQuantity,
   getAvailableVariants,
   getEffectiveInventoryStatus,
   getVariantConversionState,
@@ -66,6 +70,37 @@ test('available stock determines available versus sold out', () => {
   )
 })
 
+test('quantity reservations reduce available stock without changing physical stock', () => {
+  const product = {
+    status: 'available',
+    stock: 5,
+    reserved_quantity: 2,
+  }
+
+  assert.equal(getAvailableQuantity(product), 3)
+  assert.equal(getEffectiveInventoryStatus(product), INVENTORY_STATUSES.AVAILABLE)
+  assert.equal(canReserveQuantity(product, 3), true)
+  assert.equal(canReserveQuantity(product, 4), false)
+  assert.equal(canReleaseReservation(product, 2), true)
+  assert.equal(canReleaseReservation(product, 3), false)
+  assert.equal(canRecordSaleQuantity(product, 3), true)
+  assert.equal(canRecordSaleQuantity(product, 4), false)
+  assert.equal(canRecordSaleQuantity(product, 2, true), true)
+  assert.equal(canRecordSaleQuantity(product, 3, true), false)
+})
+
+test('a fully quantity-reserved product is reserved instead of sold out', () => {
+  const product = {
+    status: 'available',
+    stock: 4,
+    reserved_quantity: 4,
+  }
+
+  assert.equal(getAvailableQuantity(product), 0)
+  assert.equal(getEffectiveInventoryStatus(product), INVENTORY_STATUSES.RESERVED)
+  assert.equal(isProductAvailable(product), false)
+})
+
 test('a Reserved variant product remains Reserved even when totals are zero', () => {
   const product = {
     status: 'reserved',
@@ -123,6 +158,18 @@ test('zero-stock variants are not shown to customers', () => {
   assert.deepEqual(
     getAvailableVariants(variants).map((variant) => variant.label),
     ['S', 'XL']
+  )
+})
+
+test('fully reserved variants are not customer-selectable', () => {
+  const variants = [
+    { id: 's', label: 'S', stock: 2, reserved_quantity: 2, is_active: true, sort_order: 0 },
+    { id: 'm', label: 'M', stock: 2, reserved_quantity: 1, is_active: true, sort_order: 1 },
+  ]
+
+  assert.deepEqual(
+    getAvailableVariants(variants).map((variant) => variant.label),
+    ['M']
   )
 })
 

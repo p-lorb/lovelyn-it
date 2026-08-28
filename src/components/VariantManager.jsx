@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import {
+  getAvailableQuantity,
+  getReservedQuantity,
   getVariantConversionState,
   getVariantStockTotal,
 } from '../lib/inventory'
@@ -167,6 +169,13 @@ function VariantManager({ product, onProductChange }) {
       return
     }
 
+    if (stock < getReservedQuantity(variant)) {
+      setMessage(
+        `Stock cannot be lower than ${getReservedQuantity(variant)} reserved unit(s). Release the reservation first.`
+      )
+      return
+    }
+
     await updateVariant(variant, { label, stock })
   }
 
@@ -211,6 +220,11 @@ function VariantManager({ product, onProductChange }) {
       return
     }
 
+    if (getReservedQuantity(variant) > 0) {
+      setMessage('Release this variant reservation before retiring it.')
+      return
+    }
+
     await updateVariant(variant, {
       is_active: !variant.is_active,
     })
@@ -219,6 +233,11 @@ function VariantManager({ product, onProductChange }) {
   async function removeVariant(variant) {
     if (Number(variant.stock) > 0) {
       setMessage('Set stock to 0 before removing a variant.')
+      return
+    }
+
+    if (getReservedQuantity(variant) > 0) {
+      setMessage('Release this variant reservation before removing it.')
       return
     }
 
@@ -259,7 +278,11 @@ function VariantManager({ product, onProductChange }) {
           </p>
         </div>
 
-        <strong>Total available: {product.stock ?? 0}</strong>
+        <strong>
+          {getAvailableQuantity(product)} available
+          {' · '}
+          {product.reserved_quantity ?? 0} reserved
+        </strong>
       </div>
 
       {!product.has_variants ? (
@@ -313,7 +336,7 @@ function VariantManager({ product, onProductChange }) {
 
                   <input
                     type="number"
-                    min="0"
+                    min={variant.reserved_quantity ?? 0}
                     step="1"
                     value={variant.stock}
                     onChange={(event) =>
@@ -331,6 +354,9 @@ function VariantManager({ product, onProductChange }) {
 
                   <span>
                     {variant.is_active ? 'Active' : 'Retired'}
+                    {` · ${getAvailableQuantity(variant)} available`}
+                    {getReservedQuantity(variant) > 0 &&
+                      ` · ${getReservedQuantity(variant)} reserved`}
                   </span>
 
                   <div className="admin-variant-actions">

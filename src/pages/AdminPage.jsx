@@ -6,12 +6,14 @@ import {
   withCategoryNames,
 } from '../lib/categories'
 import {
+  getAvailableQuantity,
   getEffectiveInventoryStatus,
   inventoryCanBePublished,
 } from '../lib/inventory'
 import { getProductImageUrl } from '../lib/productImages'
 import CategoryManager from '../components/CategoryManager'
 import RecordSaleDialog from '../components/RecordSaleDialog'
+import ReservationDialog from '../components/ReservationDialog'
 
 function AdminPage() {
   const [session, setSession] = useState(null)
@@ -27,6 +29,7 @@ function AdminPage() {
   const [productsError, setProductsError] = useState(false)
   const [categories, setCategories] = useState([])
   const [saleProduct, setSaleProduct] = useState(null)
+  const [reservationDialog, setReservationDialog] = useState(null)
 
   const [updatingProductId, setUpdatingProductId] = useState(null)
   const [stockDrafts, setStockDrafts] = useState({})
@@ -261,7 +264,7 @@ function AdminPage() {
       stockDrafts[product.id] ?? product.stock ?? 0
     )
 
-    if (currentValue <= 0) {
+    if (currentValue <= Number(product.reserved_quantity ?? 0)) {
       return
     }
 
@@ -319,6 +322,13 @@ function AdminPage() {
       newStatus = 'available'
     }
 
+    if (parsedStock < Number(product.reserved_quantity ?? 0)) {
+      setAdminMessage(
+        `Stock cannot be lower than ${product.reserved_quantity ?? 0} reserved unit(s). Release the reservation first.`
+      )
+      return
+    }
+
     setUpdatingProductId(product.id)
 
     const { error } = await supabase
@@ -359,7 +369,7 @@ function AdminPage() {
 
     if (newStatus !== product.status) {
       setAdminMessage(
-        `${product.name} now has ${parsedStock} available ${
+        `${product.name} now has ${getAvailableQuantity({ stock: parsedStock, reserved_quantity: product.reserved_quantity })} available ${
           parsedStock === 1 ? 'unit' : 'units'
         }, so its status was changed back to Available.`
       )
@@ -931,7 +941,11 @@ function AdminPage() {
                         <span>
                           {product.category}
                           {' · '}
-                          {product.stock} in stock
+                          {product.stock} physical
+                          {' · '}
+                          {product.reserved_quantity ?? 0} reserved
+                          {' · '}
+                          {getAvailableQuantity(product)} available
                           {' · '}
                           {product.price !== null
                             ? `₱${product.price}`
@@ -995,7 +1009,7 @@ function AdminPage() {
                             updatingProductId === product.id ||
                             Number(
                               stockDrafts[product.id] ?? 0
-                            ) <= 0
+                            ) <= Number(product.reserved_quantity ?? 0)
                           }
                           onClick={() =>
                             handleStockDecrease(product)
@@ -1006,7 +1020,7 @@ function AdminPage() {
 
                         <input
                           type="number"
-                          min="0"
+                          min={product.reserved_quantity ?? 0}
                           step="1"
                           value={
                             stockDrafts[product.id] ?? ''
@@ -1116,6 +1130,34 @@ function AdminPage() {
 
                       <button
                         type="button"
+                        className="admin-price-save"
+                        disabled={
+                          updatingProductId === product.id ||
+                          getAvailableQuantity(product) === 0
+                        }
+                        onClick={() =>
+                          setReservationDialog({ product, mode: 'reserve' })
+                        }
+                      >
+                        Reserve stock
+                      </button>
+
+                      <button
+                        type="button"
+                        className="admin-price-save"
+                        disabled={
+                          updatingProductId === product.id ||
+                          Number(product.reserved_quantity ?? 0) === 0
+                        }
+                        onClick={() =>
+                          setReservationDialog({ product, mode: 'release' })
+                        }
+                      >
+                        Release reservation
+                      </button>
+
+                      <button
+                        type="button"
                         className={
                           product.published
                             ? 'admin-publish-button unpublish'
@@ -1149,6 +1191,23 @@ function AdminPage() {
           onRecorded={() => {
             setSaleProduct(null)
             setAdminMessage('Sale recorded and stock updated.')
+            loadProducts()
+          }}
+        />
+      )}
+
+      {reservationDialog && (
+        <ReservationDialog
+          product={reservationDialog.product}
+          mode={reservationDialog.mode}
+          onClose={() => setReservationDialog(null)}
+          onCompleted={() => {
+            setReservationDialog(null)
+            setAdminMessage(
+              reservationDialog.mode === 'reserve'
+                ? 'Stock reserved and availability updated.'
+                : 'Reservation released and availability updated.'
+            )
             loadProducts()
           }}
         />

@@ -30,6 +30,46 @@ export function inventoryCanBePublished(product) {
   return getEffectiveInventoryStatus(product) !== INVENTORY_STATUSES.SOLD_OUT
 }
 
+export function getReservedQuantity(inventory) {
+  return toStockNumber(inventory?.reserved_quantity) ?? 0
+}
+
+export function getAvailableQuantity(inventory) {
+  const stock = toStockNumber(inventory?.stock) ?? 0
+
+  return Math.max(stock - getReservedQuantity(inventory), 0)
+}
+
+export function canReserveQuantity(inventory, quantity) {
+  const requestedQuantity = toStockNumber(quantity)
+
+  return (
+    requestedQuantity !== null &&
+    requestedQuantity > 0 &&
+    getAvailableQuantity(inventory) >= requestedQuantity
+  )
+}
+
+export function canReleaseReservation(inventory, quantity) {
+  const requestedQuantity = toStockNumber(quantity)
+
+  return (
+    requestedQuantity !== null &&
+    requestedQuantity > 0 &&
+    getReservedQuantity(inventory) >= requestedQuantity
+  )
+}
+
+export function canRecordSaleQuantity(
+  inventory,
+  quantity,
+  useReservedStock = false
+) {
+  return useReservedStock
+    ? canReleaseReservation(inventory, quantity)
+    : canReserveQuantity(inventory, quantity)
+}
+
 export function getEffectiveInventoryStatus(product) {
   const stock = toStockNumber(product?.stock) ?? 0
 
@@ -41,6 +81,10 @@ export function getEffectiveInventoryStatus(product) {
 
   if (stock === 0) {
     return INVENTORY_STATUSES.SOLD_OUT
+  }
+
+  if (getAvailableQuantity(product) === 0) {
+    return INVENTORY_STATUSES.RESERVED
   }
 
   return INVENTORY_STATUSES.AVAILABLE
@@ -93,7 +137,7 @@ export function getAvailableVariants(variants) {
     .filter(
       (variant) =>
         variant?.is_active &&
-        (toStockNumber(variant.stock) ?? 0) > 0
+        getAvailableQuantity(variant) > 0
     )
     .sort((first, second) => {
       const orderDifference =
