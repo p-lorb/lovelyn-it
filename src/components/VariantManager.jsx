@@ -213,15 +213,15 @@ function VariantManager({ product, onProductChange }) {
   }
 
   async function retireVariant(variant) {
+    if (getReservedQuantity(variant) > 0) {
+      setMessage('Release or complete the reservation before retiring this size.')
+      return
+    }
+
     if (Number(variant.stock) > 0) {
       setMessage(
         'Set this variant stock to 0 before retiring it, so stock is never hidden accidentally.'
       )
-      return
-    }
-
-    if (getReservedQuantity(variant) > 0) {
-      setMessage('Release this variant reservation before retiring it.')
       return
     }
 
@@ -231,13 +231,13 @@ function VariantManager({ product, onProductChange }) {
   }
 
   async function removeVariant(variant) {
-    if (Number(variant.stock) > 0) {
-      setMessage('Set stock to 0 before removing a variant.')
+    if (getReservedQuantity(variant) > 0) {
+      setMessage('Release or complete the reservation before removing this size.')
       return
     }
 
-    if (getReservedQuantity(variant) > 0) {
-      setMessage('Release this variant reservation before removing it.')
+    if (Number(variant.stock) > 0) {
+      setMessage('Set stock to 0 before removing a variant.')
       return
     }
 

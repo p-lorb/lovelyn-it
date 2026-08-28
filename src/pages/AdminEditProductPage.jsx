@@ -976,8 +976,15 @@ function AdminEditProductPage() {
         deleteError
       )
 
+      const deleteErrorText = `${deleteError.code ?? ''} ${deleteError.message ?? ''}`.toLowerCase()
+      const isReservationConflict =
+        deleteErrorText.includes('reserved') ||
+        deleteErrorText.includes('reservation')
+
       setErrorMessage(
-        'Could not delete the product.'
+        isReservationConflict
+          ? 'This product has reserved stock. Release or complete the reservation before deleting it.'
+          : 'Could not delete the product.'
       )
 
       setDeleting(false)
