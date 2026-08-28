@@ -151,6 +151,27 @@ create trigger product_variants_set_updated_at
 before update on public.product_variants
 for each row execute function public.set_lovelyn_updated_at();
 
+create or replace function public.prevent_variant_product_move()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if new.product_id is distinct from old.product_id then
+    raise exception
+      'A variant cannot be moved to another product. Retire or remove it and create a new variant instead.'
+      using errcode = '23514';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists product_variants_prevent_product_move on public.product_variants;
+create trigger product_variants_prevent_product_move
+before update of product_id on public.product_variants
+for each row execute function public.prevent_variant_product_move();
+
 create or replace function public.refresh_variant_product_stock(
   p_product_id uuid
 )
@@ -237,6 +258,15 @@ alter table public.products
 alter table public.products
   add constraint products_stock_nonnegative_check
   check (stock >= 0);
+
+-- `sold` is a legacy stored value; it can only coexist with zero stock.
+-- This rejects malformed future data instead of deciding how to reinterpret it.
+alter table public.products
+  drop constraint if exists products_sold_zero_stock_check;
+
+alter table public.products
+  add constraint products_sold_zero_stock_check
+  check (status <> 'sold' or stock = 0);
 
 create or replace function public.record_sale(
   p_product_id uuid,
@@ -371,8 +401,8 @@ begin
       else null
     end,
     case
-      when current_product_stock = 0 then 'sold_out'
       when locked_product.status = 'reserved' then 'reserved'
+      when current_product_stock = 0 then 'sold_out'
       else 'available'
     end;
 end;

@@ -4,6 +4,7 @@ import {
   getAvailableVariants,
   getEffectiveInventoryStatus,
   getVariantStockTotal,
+  inventoryStateIsValid,
   INVENTORY_STATUSES,
   isProductAvailable,
 } from './inventory.js'
@@ -21,12 +22,21 @@ test('a single-stock product is available when stock exists', () => {
   assert.equal(isProductAvailable(product), true)
 })
 
-test('Reserved keeps physical stock but is not available to buyers', () => {
+test('Reserved takes priority over stock and is not available to buyers', () => {
+  const legacyReservedProduct = {
+    status: 'reserved',
+    stock: 0,
+  }
+
   const product = {
     status: 'reserved',
     stock: 3,
   }
 
+  assert.equal(
+    getEffectiveInventoryStatus(legacyReservedProduct),
+    INVENTORY_STATUSES.RESERVED
+  )
   assert.equal(
     getEffectiveInventoryStatus(product),
     INVENTORY_STATUSES.RESERVED
@@ -34,7 +44,7 @@ test('Reserved keeps physical stock but is not available to buyers', () => {
   assert.equal(isProductAvailable(product), false)
 })
 
-test('zero stock is sold out and restocking returns availability', () => {
+test('available stock determines available versus sold out', () => {
   const soldOutProduct = {
     status: 'available',
     stock: 0,
@@ -53,6 +63,43 @@ test('zero stock is sold out and restocking returns availability', () => {
     getEffectiveInventoryStatus(restockedProduct),
     INVENTORY_STATUSES.AVAILABLE
   )
+})
+
+test('a Reserved variant product remains Reserved even when totals are zero', () => {
+  const product = {
+    status: 'reserved',
+    stock: getVariantStockTotal([
+      { id: 's', stock: 0, is_active: true, sort_order: 0 },
+      { id: 'm', stock: 0, is_active: true, sort_order: 1 },
+    ]),
+    has_variants: true,
+  }
+
+  assert.equal(
+    getEffectiveInventoryStatus(product),
+    INVENTORY_STATUSES.RESERVED
+  )
+})
+
+test('a non-Reserved variant product with no stock is sold out', () => {
+  const product = {
+    status: 'available',
+    stock: getVariantStockTotal([
+      { id: 's', stock: 0, is_active: true, sort_order: 0 },
+      { id: 'm', stock: 0, is_active: true, sort_order: 1 },
+    ]),
+    has_variants: true,
+  }
+
+  assert.equal(
+    getEffectiveInventoryStatus(product),
+    INVENTORY_STATUSES.SOLD_OUT
+  )
+})
+
+test('legacy Sold status is valid only with zero stock', () => {
+  assert.equal(inventoryStateIsValid('sold', 0), true)
+  assert.equal(inventoryStateIsValid('sold', 1), false)
 })
 
 test('variant totals use active variants only', () => {

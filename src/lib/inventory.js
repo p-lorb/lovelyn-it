@@ -15,10 +15,15 @@ export function toStockNumber(stock) {
 export function inventoryStateIsValid(status, stock) {
   const numericStock = toStockNumber(stock)
 
-  return (
-    numericStock !== null &&
-    ['available', 'reserved', 'sold'].includes(status)
-  )
+  if (numericStock === null) {
+    return false
+  }
+
+  if (status === 'sold') {
+    return numericStock === 0
+  }
+
+  return ['available', 'reserved'].includes(status)
 }
 
 export function inventoryCanBePublished(product) {
@@ -28,12 +33,14 @@ export function inventoryCanBePublished(product) {
 export function getEffectiveInventoryStatus(product) {
   const stock = toStockNumber(product?.stock) ?? 0
 
-  if (stock === 0) {
-    return INVENTORY_STATUSES.SOLD_OUT
-  }
-
+  // Existing Reserved listings created under the old inventory model can
+  // legitimately have zero stock. Reservation is an explicit manual hold.
   if (product?.status === INVENTORY_STATUSES.RESERVED) {
     return INVENTORY_STATUSES.RESERVED
+  }
+
+  if (stock === 0) {
+    return INVENTORY_STATUSES.SOLD_OUT
   }
 
   return INVENTORY_STATUSES.AVAILABLE
